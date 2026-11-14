@@ -1,7 +1,7 @@
 # 11 — Staff view (chromatic bass-clef strip)
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 08, 09
 
 ## Goal

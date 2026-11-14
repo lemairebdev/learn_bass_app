@@ -1,7 +1,7 @@
 # 10 — Fretboard view
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 08, 09
 
 ## Goal

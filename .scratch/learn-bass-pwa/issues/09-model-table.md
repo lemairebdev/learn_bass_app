@@ -1,7 +1,7 @@
 # 09 — Musical model (single source of truth) and correspondence table
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 08
 
 ## Goal
@@ -26,3 +26,27 @@ Implement the pure musical model that owns every musical rule in the app, and th
 ## Done when
 
 - The suite above passes on both viewports, together with the existing suite from ticket 08.
+
+## Comments
+
+- **Resolved 2026-11-14.** Implemented on branch `ticket/09-model-table`, merged to `integration/learn-bass-pwa` as `4e23065`. Suite: 28 passed, 0 failed (14 specs × desktop/mobile).
+
+### `js/model.js` public API (the contract tickets 10–12 build on)
+
+Constants: `STRINGS` (frozen `[{name:'Mi',midi:28},{name:'La',midi:33},{name:'Ré',midi:38},{name:'Sol',midi:43}]`, low→high), `STRING_NAMES`, `FRET_MIN=0`, `FRET_MAX=20`, `FRET_COUNT=21`, `A4_MIDI=69`, `A4_FREQUENCY=440`, `WRITTEN_OCTAVE_OFFSET=12`, `MIDI_MIN=28`, `MIDI_MAX=63`, `PITCH_CLASS_NAMES`, `SHARP_PITCH_CLASSES`, `ACCIDENTAL='♯'`.
+
+Pitch primitives (integer MIDI in/out): `midiToPitchClass`, `pitchClassName`, `midiToOctave`, `midiToName`, `isSharp`, `accidentalFor`, `midiToFrequency`, `formatFrequency` (French comma, 1 decimal), `midiToWrittenMidi` (+12), `midiToWrittenName`.
+
+Staff (input is the **written** MIDI): `staffStep` (0 = bottom bass-staff line, written Sol2), `staffLedgerLines → {below, above}`, `staffPlacement → {step, ledgerLines, accidental}`.
+
+Positions/derived: `positionMidi(stringIndex, fret)`, `positionLabel → 'Mi·12'`, `positionsForMidi(midi) → [{stringIndex,string,fret}]`, `allPositions() → 84`, `PITCHES`/`allPitches()` → 36 pitch objects ascending, `pitchForMidi(midi)`.
+
+Pitch object: `{ midi, name:'Do3', pitchClass, octave, frequency, frequencyLabel:'130,8 Hz', sharp, positions:[…], written:{ midi, name, step, ledgerLines:{below,above}, accidental } }`.
+
+### DOM/filter contract already in place (ticket 12 must respect)
+
+- Rows: `#table tbody tr[data-pitch="<midi>"]`, plus `data-note`, `data-pitch-class`, `tabindex="0"`, `aria-label` = name — frequency — chips.
+- Cells/chips: `.cell-note`, `.cell-frequency`, `.cell-positions`, `.chip[data-string][data-fret]`.
+- Filters are radio groups `input[name="string-filter"]` (`all|Mi|La|Ré|Sol`) and `input[name="note-filter"]` (`all` + 12 French pitch-class names), AND-combined, default `all`.
+- Filtering writes the `hidden` attribute on rows/chips, so selection styling must use classes, never `hidden`.
+- Model precomputes frozen `PITCHES`/position maps at load; keep `js/model.js` DOM-free and import-free (ticket 08's guard spec enforces relative imports).
