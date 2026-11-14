@@ -156,6 +156,29 @@ section h2 {
   white-space: nowrap;
 }
 
+/* Sélection (décision 5). Le niveau primaire est affirmé (fond teinté, règle
+   à gauche, nom en gras) ; le secondaire — même nom, autre octave — reste un
+   simple fond très pâle, sans règle ni graisse : impossible de le confondre. */
+#table tbody tr[data-highlight="primary"] {
+  background: #e3f0f7;
+  box-shadow: inset 4px 0 0 #0f6d8f;
+}
+
+#table tbody tr[data-highlight="primary"] .cell-note {
+  color: #0f2437;
+  font-weight: 700;
+}
+
+#table tbody tr[data-highlight="secondary"] {
+  background: #f1f4f7;
+}
+
+#table tbody tr[data-highlight="secondary"] .cell-note {
+  color: #6b7885;
+  font-weight: 500;
+}
+
+
 /* Manche (ticket 10, décision 6). Le manche défile horizontalement sur écran
    étroit ; la colonne à vide (tête) reste épinglée au bord gauche. */
 .fretboard-scroll {

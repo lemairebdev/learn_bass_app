@@ -118,6 +118,51 @@ function buildTable(pitches) {
   return table;
 }
 
+/**
+ * Applique les deux niveaux de surbrillance de la sélection (décision 5) :
+ * primaire sur la ligne de la note exacte, secondaire sur les lignes des autres
+ * octaves de la même classe de hauteur. `null` (ou une note absente) efface.
+ * Le niveau est exposé par `data-highlight` et les classes `is-primary` /
+ * `is-secondary` — jamais par l'attribut `hidden`, réservé aux filtres.
+ * Amène la ligne primaire dans la zone visible.
+ */
+function applyHighlight(rows, selection) {
+  const midi = typeof selection === 'number' ? selection : selection?.midi;
+  const selected = typeof midi === 'number' ? rows.find((row) => Number(row.dataset.pitch) === midi) : null;
+  const pitchClass = selected?.dataset.pitchClass ?? null;
+
+  for (const row of rows) {
+    let tier = null;
+    if (selected && row === selected) tier = 'primary';
+    else if (selected && row.dataset.pitchClass === pitchClass) tier = 'secondary';
+
+    if (tier) {
+      row.dataset.highlight = tier;
+      row.classList.toggle('is-primary', tier === 'primary');
+      row.classList.toggle('is-secondary', tier === 'secondary');
+    } else {
+      delete row.dataset.highlight;
+      row.classList.remove('is-primary', 'is-secondary');
+    }
+  }
+
+  if (selected) selected.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/** Câble la sélection : la ligne entière est la cible (clic, Entrée, Espace). */
+function wireRowSelection(rows, onSelect) {
+  for (const row of rows) {
+    const select = () => onSelect(Number(row.dataset.pitch));
+    row.addEventListener('click', select);
+    row.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        select();
+      }
+    });
+  }
+}
+
 /** Applique les deux filtres (ET) : masque les lignes et positions exclues. */
 function applyFilters(root) {
   const stringValue = root.querySelector('input[name="string-filter"]:checked').value;
@@ -136,8 +181,21 @@ function applyFilters(root) {
   }
 }
 
-/** Rend le tableau de correspondances dans `mount`. */
-export function renderTable(mount, pitches = allPitches()) {
+/**
+ * Rend le tableau de correspondances dans `mount`.
+ *
+ * Retourne l'API de surbrillance pilotée par la sélection (ticket 12), alignée
+ * sur celles du manche et de la portée :
+ * - `highlight(soundingMidi)` : niveau primaire sur la ligne de la note exacte,
+ *   niveau secondaire sur les lignes des autres octaves de sa classe de
+ *   hauteur ; accepte un numéro MIDI ou l'objet note du modèle ; `null` efface ;
+ *   amène la ligne primaire dans la zone visible ;
+ * - `clear()` : efface toute surbrillance.
+ *
+ * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
+ * sur une ligne — le câblage de la sélection appartient au ticket 12.
+ */
+export function renderTable(mount, pitches = allPitches(), { onSelect } = {}) {
   mount.textContent = '';
 
   const filters = buildFilters();
@@ -148,4 +206,18 @@ export function renderTable(mount, pitches = allPitches()) {
     input.addEventListener('change', () => applyFilters(mount));
   }
   applyFilters(mount);
+
+  const rows = [...table.querySelectorAll('tbody tr')];
+  if (typeof onSelect === 'function') wireRowSelection(rows, onSelect);
+
+  return {
+    highlight(selection) {
+      applyHighlight(rows, selection);
+    },
+    clear() {
+      applyHighlight(rows, null);
+    },
+    mount,
+    rows,
+  };
 }

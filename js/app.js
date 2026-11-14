@@ -1,18 +1,38 @@
 // Point d'entrée de l'application (module ES chargé par index.html).
 // Bootstrap : le modèle musical (js/model.js) est la source de vérité ; chaque
-// vue en dérive. À ce stade, les vues « manche », « portée en clé de fa » et
-// « tableau de correspondances » sont montées. Les tickets suivants enregistrent
-// ici la sélection, l'audio et le service worker.
+// vue en dérive. Les vues « manche », « portée en clé de fa » et « tableau de
+// correspondances » sont montées, et la sélection unique (js/state.js) se
+// propage aux trois vues à chaque interaction (décisions 4 et 5). Le module
+// audio (ticket 13) branchera sa lecture sur `selection.onPlayRequest`.
 import { allPitches } from './model.js';
 import { renderTable } from './table.js';
 import { renderFretboard } from './fretboard.js';
 import { renderStaff } from './staff.js';
+import { selection } from './state.js';
+
+/** Toute interaction résout une note sonore puis met à jour l'état unique. */
+function select(midi) {
+  selection.select(midi);
+}
 
 const table = document.getElementById('table');
-if (table) renderTable(table, allPitches());
+const tableView = table ? renderTable(table, allPitches(), { onSelect: select }) : null;
 
 const fretboard = document.getElementById('fretboard');
-if (fretboard) renderFretboard(fretboard);
+const fretboardView = fretboard ? renderFretboard(fretboard, { onSelect: select }) : null;
 
 const staff = document.getElementById('staff');
-if (staff) renderStaff(staff);
+const staffView = staff ? renderStaff(staff, { onSelect: select }) : null;
+
+/** Les vues montées, dans l'ordre manche → portée → tableau. */
+const views = [fretboardView, staffView, tableView].filter(Boolean);
+
+// La sélection se propage : chaque vue applique ses deux niveaux de surbrillance
+// (primaire = note exacte, secondaire = autres octaves de la même classe) et
+// amène la sélection dans sa zone visible.
+selection.subscribe((midi) => {
+  for (const view of views) {
+    if (midi === null) view.clear();
+    else view.highlight(midi);
+  }
+});
