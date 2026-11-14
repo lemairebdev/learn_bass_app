@@ -1,7 +1,7 @@
 # 08 — Scaffold the app shell, PWA assets, and Playwright harness
 
 Type: task
-Status: open
+Status: claimed
 
 ## Goal
 
