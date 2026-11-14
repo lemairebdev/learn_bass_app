@@ -1,7 +1,7 @@
 # 12 — Selection state, three-way synchronization, highlight tiers
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 09, 10, 11
 
 ## Goal

@@ -1,7 +1,7 @@
 # 11 — Staff view (chromatic bass-clef strip)
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 08, 09
 
 ## Goal
@@ -26,3 +26,24 @@ The single bass-clef staff strip: one clickable notehead per written pitch (36, 
 
 - The suite above passes on both viewports together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4211 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-14.** Implemented on branch `ticket/11-staff-view`, merged to `integration/learn-bass-pwa` as `83d1937`. Suite after merge: 54 passed, 2 skipped, 0 failed.
+
+### API and DOM contract for ticket 12
+
+- `renderStaff(mount, { pitches = allPitches(), onSelect } = {})` → `{ highlight, clear, mount, scroller, svg, pitches }` — mirrors the fretboard handle from ticket 10.
+- `highlight(selection)` accepts a sounding MIDI number or a model pitch object; primary = the single notehead at the exact pitch's written pitch (sounding + 12); secondary = noteheads of the same pitch class in other octaves; `null`/out-of-range clears; auto-scrolls the primary notehead into view (instant).
+- `onSelect(soundingMidi)` fires on click/Enter/Space on a notehead.
+- Notehead `<g class="notehead">` carries `data-midi` and `data-pitch` (both sounding MIDI), `data-note` (sounding name), `data-pitch-class`, `data-written-pitch`, `data-written-name`, `role="button"`, `tabindex="0"`, `aria-label="Note écrite Mi2 (son Mi1)"`; tiers marked `data-highlight="primary|secondary"` plus classes `is-primary`/`is-secondary`, attribute absent at rest.
+- Structure: `#staff .staff-scroll`, `svg.staff-svg`, `.staff-line`, `.ledger.ledger-below|.ledger-above`, `.notehead-head`, `.accidental`, `.notehead-label`.
+
+### Extreme-ledger validation (implementation-time prototype)
+
+Rasterised at 1:1 and checked pixel-by-pixel: Mi2 has exactly one ledger line (22 px below the bottom staff line); Ré♯5 has five ledger lines above (22 px apart, notehead on the fifth). Staff lines 22 px apart; invisible hit rect = full column, 46×306 px on the mobile viewport (≥44 px). Adjustments: label font 11→12 px, ♯ 15→16 px, ♯ gap 14→15 px, and labels moved to a fixed bottom row aligned under each column to stop collisions.
+
+### Open deviation for ticket 15 / code review
+
+- The desktop staff **scrolls horizontally inside its column** instead of fitting the ~740 px desktop column; scaling to fit would shrink labels to ~5 px (unreadable). Page layout (staff/table side by side) is unchanged, but user story 29 (« no scrolling between them on PC ») should be re-examined by ticket 15 or code review.
+- No bass-clef glyph is drawn (avoids missing-glyph tofu on Android fonts); the staff is identified by the « Portée » heading and `aria-label="Portée en clé de fa"`.
