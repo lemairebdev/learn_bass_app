@@ -168,3 +168,74 @@ section h2 {
     grid-column: 1 / -1;
   }
 }
+
+/* Portée en clé de fa (ticket 11). */
+#staff .staff-scroll {
+  overflow-x: auto;
+}
+
+#staff .staff-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#staff .staff-line,
+#staff .ledger {
+  stroke: #56606d;
+  stroke-width: 1;
+}
+
+#staff .notehead {
+  cursor: pointer;
+}
+
+#staff .notehead-hit {
+  fill: transparent;
+}
+
+#staff .notehead-head {
+  fill: #1c2430;
+}
+
+#staff .staff-line,
+#staff .ledger,
+#staff .notehead-head,
+#staff .accidental,
+#staff .notehead-label {
+  pointer-events: none;
+}
+
+#staff .accidental {
+  fill: #1c2430;
+}
+
+#staff .notehead-label {
+  fill: #56606d;
+}
+
+#staff .notehead:focus-visible .notehead-head {
+  stroke: #0f2437;
+  stroke-width: 2.5;
+}
+
+/* Niveau primaire : la hauteur exacte — accent net, étiquette affirmée. */
+#staff .notehead[data-highlight="primary"] .notehead-head {
+  fill: #0f6d8f;
+  stroke: #0f2437;
+  stroke-width: 1.5;
+}
+
+#staff .notehead[data-highlight="primary"] .notehead-label {
+  fill: #0f2437;
+  font-weight: 700;
+}
+
+/* Niveau secondaire : même nom, autre octave — nettement plus discret. */
+#staff .notehead[data-highlight="secondary"] .notehead-head {
+  fill: #c3ccd6;
+}
+
+#staff .notehead[data-highlight="secondary"] .notehead-label {
+  fill: #9aa7b4;
+}
