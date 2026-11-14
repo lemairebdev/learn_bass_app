@@ -254,9 +254,11 @@ function setCellNote(cell, text) {
  * Applique les deux niveaux de surbrillance pour une note sonore sélectionnée :
  * primaire sur toutes les positions exactes, secondaire sur les autres octaves
  * de la même classe de hauteur. `null` (ou une note hors instrument) efface.
+ * Accepte le numéro MIDI ou l'objet note du modèle (identité : `midi`).
  */
-function applyHighlight(cells, scroller, selectedMidi) {
-  const pitch = typeof selectedMidi === 'number' ? pitchForMidi(selectedMidi) : null;
+function applyHighlight(cells, scroller, selection) {
+  const midi = typeof selection === 'number' ? selection : selection?.midi;
+  const pitch = typeof midi === 'number' ? pitchForMidi(midi) : null;
 
   for (const cell of cells) {
     const midi = Number(cell.dataset.midi);
@@ -315,6 +317,7 @@ function wirePointerEvents(cells, onSelect) {
  * Retourne l'API de surbrillance pilotée par la sélection (ticket 12) :
  * - `highlight(soundingMidi)` : surbrillance primaire sur toutes les positions
  *   de la note exacte, secondaire sur les autres octaves de sa classe ;
+ *   accepte un numéro MIDI ou l'objet note du modèle ;
  * - `clear()` : efface toute surbrillance.
  *
  * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
