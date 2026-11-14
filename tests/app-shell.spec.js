@@ -82,3 +82,40 @@ test("affiche l'en-tête puis manche, portée et tableau dans cet ordre (décisi
   expect(headerBox.y + headerBox.height).toBeLessThanOrEqual(fretboardBox.y + 1);
   expect(fretboardBox.y + fretboardBox.height).toBeLessThanOrEqual(staffBox.y + 1);
 });
+
+test('le manifeste est français, installable, et ses icônes existent à la taille annoncée', async ({ request }) => {
+  const response = await request.get('/manifest.webmanifest');
+  expect(response.status()).toBe(200);
+  const manifest = await response.json();
+
+  // Champs français et intitulé de travail (décision 2).
+  expect(manifest.name).toBe(TITLE);
+  expect(manifest.short_name).toBe('Basse');
+  expect(manifest.lang).toBe('fr');
+
+  // Installabilité : URL de départ relative, affichage autonome, couleurs.
+  expect(manifest.start_url).toBe('./');
+  expect(manifest.display).toBe('standalone');
+  expect(manifest.theme_color).toMatch(/^#[0-9a-f]{6}$/i);
+  expect(manifest.background_color).toMatch(/^#[0-9a-f]{6}$/i);
+
+  // Icônes 192 et 512, chemins relatifs, fichiers présents et PNG valides
+  // aux dimensions exactes.
+  const sizes = manifest.icons.map((icon) => icon.sizes);
+  expect(sizes).toContain('192x192');
+  expect(sizes).toContain('512x512');
+
+  for (const icon of manifest.icons) {
+    expect(icon.type).toBe('image/png');
+    expect(icon.src.startsWith('/'), 'src d’icône relatif').toBe(false);
+    expect(icon.src).not.toMatch(/^[a-z][a-z0-9+.-]*:/i);
+
+    const iconUrl = new URL(icon.src, response.url());
+    const iconResponse = await request.get(iconUrl.pathname);
+    expect(iconResponse.status(), `icône présente : ${icon.src}`).toBe(200);
+    const bytes = await iconResponse.body();
+    const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(bytes.subarray(0, 8), `${icon.src} est un PNG`).toEqual(signature);
+    expect(`${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`, `${icon.src} à la taille annoncée`).toBe(icon.sizes);
+  }
+});
