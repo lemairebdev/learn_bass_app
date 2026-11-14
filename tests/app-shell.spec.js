@@ -11,8 +11,36 @@
  * (DOM, réseau, console), jamais les modules internes.
  */
 import { expect, test } from '@playwright/test';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const TITLE = 'Apprendre la basse';
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Fichiers « livrés » par l'application (servis tels quels par un hébergeur
+ * statique) : coquille, styles, manifeste, modules JS, et sw.js quand il
+ * existera (ticket 14). Les dépendances de dev, tests et artefacts Playwright
+ * n'en font pas partie.
+ */
+function shippedTextFiles() {
+  const files = [];
+  for (const name of ['index.html', 'styles.css', 'manifest.webmanifest', 'sw.js']) {
+    const file = join(ROOT, name);
+    if (existsSync(file)) files.push(file);
+  }
+  const jsDir = join(ROOT, 'js');
+  if (existsSync(jsDir)) {
+    for (const entry of readdirSync(jsDir, { recursive: true })) {
+      if (entry.endsWith('.js')) files.push(join(jsDir, entry));
+    }
+  }
+  return files;
+}
+
+/** Une URL est relative si elle ne commence ni par « / » ni par un schéma. */
+const ABSOLUTE_URL = /^(?:[a-z][a-z0-9+.-]*:)?\//i;
 
 test("l'application se charge sans erreur console et sans requête échouée ou inter-origine", async ({ page }) => {
   const problems = [];
@@ -140,5 +168,39 @@ test('portée et tableau côte à côte sur grand écran, empilées sur mobile (
   } else {
     // Écran étroit : les trois vues empilées dans l'ordre de la décision 10.
     expect(staffBox.y + staffBox.height).toBeLessThanOrEqual(tableBox.y + 1);
+  }
+});
+
+test('aucun fichier livré ne référence d’URL absolue ni de dépendance externe', () => {
+  const files = shippedTextFiles();
+  expect(files.length, 'la coquille est présente dans la liste').toBeGreaterThan(0);
+
+  for (const file of files) {
+    const rel = relative(ROOT, file);
+    const content = readFileSync(file, 'utf8');
+
+    // Aucune ressource externe, nulle part, même dans un commentaire :
+    // l'app embarque tout ce qu'elle sert (décision 1).
+    expect(content, `${rel} : aucune URL http(s)`).not.toMatch(/https?:\/\//i);
+
+    // HTML/CSS : toutes les URL portées par les attributs sont relatives.
+    if (file.endsWith('.html')) {
+      for (const [, url] of content.matchAll(/(?:src|href|action|poster)\s*=\s*["']([^"']+)["']/gi)) {
+        expect(url, `${rel} : « ${url} » doit être une URL relative`).not.toMatch(ABSOLUTE_URL);
+      }
+    }
+    if (file.endsWith('.css')) {
+      for (const [, url] of content.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) {
+        expect(url, `${rel} : « ${url} » doit être une URL relative`).not.toMatch(ABSOLUTE_URL);
+      }
+    }
+
+    // JS : imports de modules relatifs uniquement (./… ou ../…), donc aucune
+    // dépendance d'exécution nue.
+    if (file.endsWith('.js')) {
+      for (const [, specifier] of content.matchAll(/(?:\bfrom|\bimport)\s*\(?\s*["']([^"']+)["']/g)) {
+        expect(specifier, `${rel} : « ${specifier} » doit être un chemin relatif`).toMatch(/^\.\.?\//);
+      }
+    }
   }
 });
