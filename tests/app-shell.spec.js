@@ -44,3 +44,41 @@ test("l'application se charge sans erreur console et sans requête échouée ou 
   }
   expect(problems, 'problèmes observés pendant le chargement').toEqual([]);
 });
+
+test("affiche l'en-tête puis manche, portée et tableau dans cet ordre (décision 10)", async ({ page }) => {
+  await page.goto('/');
+
+  const header = page.locator('header');
+  await expect(header).toBeVisible();
+  await expect(page.locator('main section')).toHaveCount(3);
+
+  // Ordre du document : en-tête, puis les trois sections dans l'ordre 10.
+  const ordre = await page.evaluate(() =>
+    [...document.querySelectorAll('header, main > section')].map((el) => el.id || el.tagName.toLowerCase()),
+  );
+  expect(ordre).toEqual(['header', 'fretboard-section', 'staff-section', 'table-section']);
+
+  // Points de montage que les vues rempliront (tickets 09–12), et conteneur
+  // des contrôles audio dans l'en-tête (ticket 13).
+  await expect(page.locator('header #audio-controls')).toBeAttached();
+  await expect(page.locator('#fretboard')).toBeAttached();
+  await expect(page.locator('#staff')).toBeAttached();
+  await expect(page.locator('#table')).toBeAttached();
+
+  // Intitulés français des sections.
+  await expect(page.locator('#fretboard-section h2')).toHaveText('Manche');
+  await expect(page.locator('#staff-section h2')).toHaveText('Portée');
+  await expect(page.locator('#table-section h2')).toHaveText('Tableau de correspondances');
+
+  // Le bootstrap se charge en module ES, par URL relative.
+  const script = page.locator('script[type="module"]');
+  await expect(script).toHaveCount(1);
+  await expect(script).toHaveAttribute('src', 'js/app.js');
+
+  // Ordre visuel : l'en-tête puis le manche sont au-dessus de la portée.
+  const headerBox = await header.boundingBox();
+  const fretboardBox = await page.locator('#fretboard-section').boundingBox();
+  const staffBox = await page.locator('#staff-section').boundingBox();
+  expect(headerBox.y + headerBox.height).toBeLessThanOrEqual(fretboardBox.y + 1);
+  expect(fretboardBox.y + fretboardBox.height).toBeLessThanOrEqual(staffBox.y + 1);
+});

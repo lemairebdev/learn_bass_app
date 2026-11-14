@@ -50,3 +50,29 @@ header h1 {
   gap: 0.5rem;
   margin-inline-start: auto;
 }
+
+/* Trois vues empilées par défaut (écrans étroits) ; sur grand écran, portée
+   et tableau se partagent une ligne sous le manche — voir le @media plus bas. */
+main {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+section {
+  min-width: 0;
+  padding: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+/* Points de montage des vues (tickets 09–12). */
+.view {
+  min-width: 0;
+}
