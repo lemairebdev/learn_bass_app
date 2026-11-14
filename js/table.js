@@ -2,7 +2,7 @@
 // Rend une ligne par note distincte dans son point de montage, en ne lisant que
 // le modèle musical (js/model.js). Deux filtres combinés par ET : corde et nom
 // de note ; par défaut, aucun filtre.
-import { allPitches, pitchClassName, STRINGS, PITCH_CLASS_NAMES } from './model.js';
+import { allPitches, pitchClassName, positionLabel, STRINGS, PITCH_CLASS_NAMES } from './model.js';
 
 const ALL = 'all';
 
@@ -62,16 +62,25 @@ function buildChip(position) {
   chip.className = 'chip';
   chip.dataset.string = position.string;
   chip.dataset.fret = String(position.fret);
-  chip.textContent = `${position.string}·${position.fret}`;
+  chip.textContent = positionLabel(position.stringIndex, position.fret);
   return chip;
 }
 
 function buildRow(pitch) {
   const row = document.createElement('tr');
+  const positionLabels = pitch.positions.map((position) =>
+    positionLabel(position.stringIndex, position.fret),
+  );
+
   row.dataset.pitch = String(pitch.midi);
   row.dataset.note = pitch.name;
   row.dataset.pitchClass = pitchClassName(pitch.pitchClass);
-  row.setAttribute('aria-label', pitch.name);
+  // Cible de clic : la ligne entière sélectionne la note (câblage ticket 12).
+  row.tabIndex = 0;
+  row.setAttribute(
+    'aria-label',
+    `${pitch.name} — ${pitch.frequencyLabel} — ${positionLabels.join(', ')}`,
+  );
 
   const note = document.createElement('td');
   note.className = 'cell-note';

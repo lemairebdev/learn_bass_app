@@ -236,3 +236,44 @@ test("combine les deux filtres par ET, et « toutes » restaure le tableau entie
   expect(allRows).toHaveLength(36);
   expect(allRows.flatMap((row) => row.chips)).toHaveLength(84);
 });
+
+test("les filtres proposent toutes les cordes et les 12 classes de hauteur (décision 8)", async ({ page }) => {
+  await page.goto('/');
+
+  const stringValues = await page
+    .locator('input[name="string-filter"]')
+    .evaluateAll((inputs) => inputs.map((input) => input.value));
+  expect(stringValues).toEqual(['all', 'Mi', 'La', 'Ré', 'Sol']);
+
+  const noteValues = await page
+    .locator('input[name="note-filter"]')
+    .evaluateAll((inputs) => inputs.map((input) => input.value));
+  expect(noteValues).toEqual([
+    'all', 'Do', 'Do♯', 'Ré', 'Ré♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si',
+  ]);
+});
+
+test("chaque ligne porte le contrat DOM de la note et l'affordance de sélection (décision 11)", async ({ page }) => {
+  await page.goto('/');
+
+  const rows = await readTable(page);
+
+  // Le numéro MIDI — identité de la note — et le nom sonore sont exposés.
+  expect(rows.every((row) => /^\d+$/.test(row.pitch))).toBe(true);
+  expect(rows.every((row) => row.note === row.name)).toBe(true);
+
+  // L'aria-label français identifie la note sonore : nom, fréquence, positions.
+  for (const row of rows) {
+    expect(row.label, `aria-label de ${row.name}`).toContain(row.name);
+    expect(row.label, `aria-label de ${row.name}`).toContain(row.frequency);
+    for (const chip of row.chips) expect(row.label).toContain(chip);
+  }
+
+  // La ligne entière est une cible de clic : focusable, avec le numéro MIDI.
+  const focusable = await page.locator('#table tbody tr').evaluateAll((trs) =>
+    trs.every((tr) => tr.getAttribute('tabindex') === '0'),
+  );
+  expect(focusable).toBe(true);
+  await expect(page.locator('#table tbody tr').first()).toHaveAttribute('data-pitch', '28');
+  await expect(page.locator('#table tbody tr').last()).toHaveAttribute('data-pitch', '63');
+});
