@@ -113,7 +113,9 @@ function buildNotehead(pitch, index, totalHeight) {
 
   const notehead = svgElement('g', {
     class: 'notehead',
-    // Identité sonore (comme les lignes du tableau) et hauteur écrite.
+    // Identité sonore (comme les lignes du tableau et les cases du manche) et
+    // hauteur écrite.
+    'data-midi': pitch.midi,
     'data-pitch': pitch.midi,
     'data-note': pitch.name,
     'data-pitch-class': pitchClassName(pitch.pitchClass),
@@ -181,66 +183,62 @@ function buildNotehead(pitch, index, totalHeight) {
 }
 
 /**
- * Contrôleur de surbrillance de la portée (piloté par le ticket 12).
- *
- * - `applyHighlights({ primary, secondary })` : marque la tête `primary` (MIDI
- *   sonore) et les têtes `secondary` (liste de MIDI sonores) ; le niveau est
- *   exposé par `data-highlight="primary|secondary"` et les classes
- *   `is-primary` / `is-secondary`.
- * - `clearHighlights()` : retire les deux niveaux.
- * - `setSelection(midi)` : dérive les deux niveaux du modèle (primaire = la
- *   hauteur écrite du MIDI sonore ; secondaire = les autres octaves de la même
- *   classe de hauteur) ; `null` efface.
- * - `scrollToPitch(midi)` : amène la tête correspondante dans la vue.
+ * Applique un niveau de surbrillance à une tête — `null` efface. Le niveau est
+ * exposé par `data-highlight="primary|secondary"` et les classes `is-primary` /
+ * `is-secondary` (aucun attribut au repos), comme les cases du manche.
  */
-function createController(mount, scroller, svg, pitches) {
-  const noteheads = [...svg.querySelectorAll('.notehead')];
-  const byMidi = new Map(noteheads.map((element) => [Number(element.getAttribute('data-pitch')), element]));
-
-  function clearHighlights() {
-    for (const element of noteheads) {
-      element.removeAttribute('data-highlight');
-      element.classList.remove('is-primary', 'is-secondary');
-    }
+function setTier(element, tier) {
+  if (!tier) {
+    element.removeAttribute('data-highlight');
+    element.classList.remove('is-primary', 'is-secondary');
+    return;
   }
-
-  function mark(midi, tier) {
-    const element = byMidi.get(midi);
-    if (!element) return;
-    element.setAttribute('data-highlight', tier);
-    element.classList.add(tier === 'primary' ? 'is-primary' : 'is-secondary');
-  }
-
-  function applyHighlights({ primary = null, secondary = [] } = {}) {
-    clearHighlights();
-    if (primary !== null && primary !== undefined) mark(primary, 'primary');
-    for (const midi of secondary) {
-      if (midi !== primary) mark(midi, 'secondary');
-    }
-  }
-
-  function setSelection(soundingMidi) {
-    const selected = soundingMidi === null ? null : pitches.find((pitch) => pitch.midi === soundingMidi);
-    if (!selected) {
-      clearHighlights();
-      return;
-    }
-    const secondary = pitches
-      .filter((pitch) => pitch.pitchClass === selected.pitchClass && pitch.midi !== selected.midi)
-      .map((pitch) => pitch.midi);
-    applyHighlights({ primary: selected.midi, secondary });
-  }
-
-  function scrollToPitch(soundingMidi) {
-    const element = byMidi.get(soundingMidi);
-    if (element) element.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-  }
-
-  return { mount, scroller, svg, pitches, applyHighlights, clearHighlights, setSelection, scrollToPitch };
+  element.setAttribute('data-highlight', tier);
+  element.classList.add(tier === 'primary' ? 'is-primary' : 'is-secondary');
 }
 
-/** Rend la portée en clé de fa dans `mount` et renvoie son contrôleur. */
-export function renderStaff(mount, pitches = allPitches()) {
+/** Amène une tête dans la zone visible du ruban (défilement instantané). */
+function scrollNoteheadIntoView(scroller, notehead) {
+  if (scroller.scrollWidth <= scroller.clientWidth) return;
+  const rect = notehead.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  if (rect.left < scrollerRect.left) {
+    scroller.scrollLeft -= scrollerRect.left - rect.left;
+  } else if (rect.right > scrollerRect.right) {
+    scroller.scrollLeft += rect.right - scrollerRect.right;
+  }
+}
+
+/** Câble les interactions de pointeur : la tête entière est la cible. */
+function wirePointerEvents(noteheads, onSelect) {
+  for (const notehead of noteheads) {
+    const select = () => onSelect(Number(notehead.getAttribute('data-midi')));
+    notehead.addEventListener('click', select);
+    notehead.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        select();
+      }
+    });
+  }
+}
+
+/**
+ * Rend la portée en clé de fa dans `mount`.
+ *
+ * Retourne l'API de surbrillance pilotée par la sélection (ticket 12), alignée
+ * sur celle du manche :
+ * - `highlight(soundingMidi)` : niveau primaire sur la tête de la hauteur
+ *   écrite de la note exacte, niveau secondaire sur les autres octaves de sa
+ *   classe de hauteur ; accepte un numéro MIDI ou l'objet note du modèle ;
+ *   `null` (ou une note hors instrument) efface ; amène la tête primaire dans
+ *   la zone visible ;
+ * - `clear()` : efface toute surbrillance.
+ *
+ * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
+ * sur une tête — le câblage de la sélection appartient au ticket 12.
+ */
+export function renderStaff(mount, { pitches = allPitches(), onSelect } = {}) {
   mount.textContent = '';
 
   const totalWidth = PAD_X * 2 + pitches.length * COLUMN_WIDTH;
@@ -270,5 +268,32 @@ export function renderStaff(mount, pitches = allPitches()) {
   scroller.append(svg);
   mount.append(scroller);
 
-  return createController(mount, scroller, svg, pitches);
+  const heads = [...svg.querySelectorAll('.notehead')];
+  const byMidi = new Map(heads.map((element) => [Number(element.getAttribute('data-midi')), element]));
+
+  function clear() {
+    for (const element of heads) setTier(element, null);
+  }
+
+  function highlight(selection) {
+    const midi = typeof selection === 'number' ? selection : selection?.midi;
+    const selected = typeof midi === 'number' ? pitches.find((pitch) => pitch.midi === midi) : null;
+    clear();
+    if (!selected) return;
+
+    const secondary = new Set(
+      pitches
+        .filter((pitch) => pitch.pitchClass === selected.pitchClass && pitch.midi !== selected.midi)
+        .map((pitch) => pitch.midi),
+    );
+    for (const pitch of pitches) {
+      if (pitch.midi === selected.midi) setTier(byMidi.get(pitch.midi), 'primary');
+      else if (secondary.has(pitch.midi)) setTier(byMidi.get(pitch.midi), 'secondary');
+    }
+    scrollNoteheadIntoView(scroller, byMidi.get(selected.midi));
+  }
+
+  if (typeof onSelect === 'function') wirePointerEvents(heads, onSelect);
+
+  return { highlight, clear, mount, scroller, svg, pitches };
 }

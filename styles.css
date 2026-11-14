@@ -156,6 +156,103 @@ section h2 {
   white-space: nowrap;
 }
 
+/* Manche (ticket 10, décision 6). Le manche défile horizontalement sur écran
+   étroit ; la colonne à vide (tête) reste épinglée au bord gauche. */
+.fretboard-scroll {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fretboard-pinned {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  flex: none;
+}
+
+.fretboard-frets {
+  flex: none;
+}
+
+.fretboard-pinned-bg,
+.fretboard-board {
+  fill: var(--color-surface);
+}
+
+.fret-nut {
+  fill: var(--color-header);
+}
+
+.fret-wire {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.fret-marker {
+  fill: #b8c2cf;
+}
+
+.fret-number {
+  fill: #56606d;
+  font-size: 12px;
+}
+
+.string-name {
+  fill: #56606d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* La case entière est la cible de pointeur ; le nom de la note n'apparaît
+   qu'à la surbrillance. */
+.fret-cell {
+  cursor: pointer;
+}
+
+.fret-cell .cell-bg {
+  fill: transparent;
+}
+
+.fret-cell .cell-note {
+  fill: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.fret-cell:hover .cell-bg {
+  fill: var(--color-bg);
+}
+
+.fret-cell:focus-visible {
+  outline: 2px solid var(--color-header);
+  outline-offset: -2px;
+}
+
+/* Niveau primaire : la note exacte, en plein style. */
+.fret-cell[data-highlight="primary"] .cell-bg {
+  fill: var(--color-header);
+}
+
+.fret-cell[data-highlight="primary"] .cell-note {
+  fill: #ffffff;
+}
+
+/* Niveau secondaire : même nom, autre octave — nettement plus discret. */
+.fret-cell[data-highlight="secondary"] .cell-bg {
+  fill: #d6e4f0;
+}
+
+.fret-cell[data-highlight="secondary"] .cell-note {
+  fill: #3f5872;
+  font-weight: 500;
+  opacity: 0.7;
+}
+
 /* Grand écran (décision 10) : le manche garde toute la largeur au-dessus,
    portée et tableau se partagent la ligne suivante. */
 @media (min-width: 60em) {
