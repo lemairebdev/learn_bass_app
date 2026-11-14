@@ -238,8 +238,9 @@ test('la sélection ne survit pas à un rechargement (décision 4)', async ({ pa
   await expect(page.locator('[data-highlight]')).toHaveCount(0);
   const state = await readSync(page);
   for (const view of ['fretboard', 'staff', 'table']) {
-    expect(keysOf(state[view], 'primary'), `aucun primaire dans ${view}`).toEqual([]);
-    expect(midisOf(state[view], 'secondary'), `aucun secondaire dans ${view}`).toEqual([]);
+    expect(state[view].every((item) => item.tier === null), `aucune surbrillance dans ${view}`).toBe(
+      true,
+    );
   }
 });
 
