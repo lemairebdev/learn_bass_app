@@ -57,6 +57,15 @@ function buildFilters() {
   return filters;
 }
 
+function buildChip(position) {
+  const chip = document.createElement('span');
+  chip.className = 'chip';
+  chip.dataset.string = position.string;
+  chip.dataset.fret = String(position.fret);
+  chip.textContent = `${position.string}·${position.fret}`;
+  return chip;
+}
+
 function buildRow(pitch) {
   const row = document.createElement('tr');
   row.dataset.pitch = String(pitch.midi);
@@ -73,6 +82,7 @@ function buildRow(pitch) {
 
   const positions = document.createElement('td');
   positions.className = 'cell-positions';
+  positions.append(...pitch.positions.map(buildChip));
 
   row.append(note, frequency, positions);
   return row;

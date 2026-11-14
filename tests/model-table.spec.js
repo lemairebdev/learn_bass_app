@@ -114,3 +114,29 @@ test("affiche la fréquence exacte de chaque note, à la française (décision 2
   expect(frequencyText).not.toContain('.');
   expect(frequencyText).toContain('41,2 Hz');
 });
+
+test("liste toutes les positions « Corde·case » de chaque note (décision 3)", async ({ page }) => {
+  await page.goto('/');
+
+  const rows = await readTable(page);
+
+  // Jeu complet des 84 positions, chaque note avec toutes ses positions,
+  // de la corde la plus grave à la plus aiguë.
+  expect(rows.map((row) => row.chips)).toEqual(EXPECTED_NOTES.map((note) => note.positions));
+
+  // La corde à vide (case 0) fait partie de la carte : Mi·0, La·0, Ré·0, Sol·0.
+  const allChips = (await page.locator('#table .chip').allTextContents()).join(' ');
+  for (const openString of ['Mi·0', 'La·0', 'Ré·0', 'Sol·0']) {
+    expect(allChips).toContain(openString);
+  }
+  expect(rows[0].chips).toEqual(['Mi·0']);
+
+  // Bornes de l'instrument, cas d'école de la spécification.
+  expect(rows.find((row) => row.name === 'Mi1').chips).toEqual(['Mi·0']);
+  expect(rows.find((row) => row.name === 'Ré♯4').chips).toEqual(['Sol·20']);
+  expect(rows.find((row) => row.name === 'Do3').chips).toEqual(['Mi·20', 'La·15', 'Ré·10', 'Sol·5']);
+
+  // Toutes les positions de l'instrument sont présentes : 84 au total.
+  const chipCount = await page.locator('#table .chip').count();
+  expect(chipCount).toBe(84);
+});
