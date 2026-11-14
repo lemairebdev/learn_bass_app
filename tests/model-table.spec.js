@@ -75,6 +75,11 @@ async function readTable(page) {
   );
 }
 
+/** Classe de hauteur d'un nom (« Do♯3 » → « Do♯ »), pour comparer sans octave. */
+function pitchClassOf(name) {
+  return name.replace(/\d+$/, '');
+}
+
 test("affiche les 36 notes de Mi1 à Ré♯4 en ordre ascendant, sans filtre par défaut", async ({ page }) => {
   await page.goto('/');
 
@@ -139,4 +144,95 @@ test("liste toutes les positions « Corde·case » de chaque note (décision 3)"
   // Toutes les positions de l'instrument sont présentes : 84 au total.
   const chipCount = await page.locator('#table .chip').count();
   expect(chipCount).toBe(84);
+});
+
+test("n'écrit que des dièses, jamais de bémol (décisions 2 et 12)", async ({ page }) => {
+  await page.goto('/');
+
+  // Aucun bémol nulle part dans le tableau ; les noms se limitent au solfège
+  // français avec un ♯ facultatif et le chiffre d'octave.
+  const text = await page.locator('#table').innerText();
+  expect(text).not.toContain('♭');
+  expect(text).not.toMatch(/[bB](?=\d)/);
+
+  const names = (await page.locator('#table .cell-note').allTextContents()).map((n) => n.trim());
+  for (const name of names) {
+    expect(name, `« ${name} » est un nom solfège français avec ♯ facultatif`).toMatch(
+      /^(Do|Ré|Mi|Fa|Sol|La|Si)♯?\d$/,
+    );
+  }
+
+  // Les notes altérées existent bien et s'écrivent avec ♯.
+  expect(names).toContain('Fa♯1');
+  expect(names).toContain('Ré♯4');
+  expect(names.filter((name) => name.includes('♯'))).toHaveLength(15);
+});
+
+test("filtre par corde : seules les lignes et positions de cette corde restent (décision 8)", async ({ page }) => {
+  await page.goto('/');
+
+  await page.check('input[name="string-filter"][value="Sol"]');
+
+  const rows = await readTable(page);
+  const expected = EXPECTED_NOTES.filter((note) =>
+    note.positions.some((position) => position.startsWith('Sol·')),
+  );
+  expect(rows.map((row) => row.name)).toEqual(expected.map((note) => note.name));
+  expect(rows.length).toBeGreaterThan(0);
+  expect(rows.length).toBeLessThan(EXPECTED_NOTES.length);
+
+  // Chaque ligne restante ne montre que ses positions sur la corde choisie.
+  for (const row of rows) {
+    expect(row.chips.length).toBeGreaterThan(0);
+    for (const chip of row.chips) expect(chip.startsWith('Sol·')).toBe(true);
+  }
+
+  // La corde Mi à vide disparaît, la corde Sol à vide reste.
+  const visibleChips = rows.flatMap((row) => row.chips).join(' ');
+  expect(visibleChips).toContain('Sol·0');
+  expect(visibleChips).not.toContain('Mi·0');
+});
+
+test("filtre par nom de note : toutes les octaves d'une même classe (décision 8)", async ({ page }) => {
+  await page.goto('/');
+
+  await page.check('input[name="note-filter"][value="Ré♯"]');
+
+  const rows = await readTable(page);
+  const expected = EXPECTED_NOTES.filter((note) => pitchClassOf(note.name) === 'Ré♯');
+  expect(rows.map((row) => row.name)).toEqual(expected.map((note) => note.name));
+  expect(rows.map((row) => row.name)).toEqual(['Ré♯2', 'Ré♯3', 'Ré♯4']);
+
+  // « Ré♯ » ne doit pas capturer « Ré » : les deux classes sont distinctes.
+  await page.check('input[name="note-filter"][value="Ré"]');
+  const reRows = await readTable(page);
+  expect(reRows.map((row) => row.name)).toEqual(['Ré2', 'Ré3', 'Ré4']);
+  expect(reRows.every((row) => !row.name.includes('♯'))).toBe(true);
+});
+
+test("combine les deux filtres par ET, et « toutes » restaure le tableau entier (décision 8)", async ({ page }) => {
+  await page.goto('/');
+
+  await page.check('input[name="string-filter"][value="Sol"]');
+  await page.check('input[name="note-filter"][value="Do"]');
+
+  const rows = await readTable(page);
+  const expected = EXPECTED_NOTES.filter(
+    (note) =>
+      pitchClassOf(note.name) === 'Do' &&
+      note.positions.some((position) => position.startsWith('Sol·')),
+  );
+  expect(rows.map((row) => row.name)).toEqual(expected.map((note) => note.name));
+  expect(rows.map((row) => row.name)).toEqual(['Do3', 'Do4']);
+  for (const row of rows) for (const chip of row.chips) expect(chip.startsWith('Sol·')).toBe(true);
+
+  // La combinaison est bien l'intersection des deux filtres : deux lignes ici.
+  expect(rows.length).toBe(2);
+
+  // Revenir à « toutes » dans les deux filtres rend les 36 lignes et 84 positions.
+  await page.check('input[name="string-filter"][value="all"]');
+  await page.check('input[name="note-filter"][value="all"]');
+  const allRows = await readTable(page);
+  expect(allRows).toHaveLength(36);
+  expect(allRows.flatMap((row) => row.chips)).toHaveLength(84);
 });

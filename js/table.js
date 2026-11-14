@@ -2,7 +2,7 @@
 // Rend une ligne par note distincte dans son point de montage, en ne lisant que
 // le modèle musical (js/model.js). Deux filtres combinés par ET : corde et nom
 // de note ; par défaut, aucun filtre.
-import { allPitches, STRINGS, PITCH_CLASS_NAMES } from './model.js';
+import { allPitches, pitchClassName, STRINGS, PITCH_CLASS_NAMES } from './model.js';
 
 const ALL = 'all';
 
@@ -70,6 +70,7 @@ function buildRow(pitch) {
   const row = document.createElement('tr');
   row.dataset.pitch = String(pitch.midi);
   row.dataset.note = pitch.name;
+  row.dataset.pitchClass = pitchClassName(pitch.pitchClass);
   row.setAttribute('aria-label', pitch.name);
 
   const note = document.createElement('td');
@@ -108,8 +109,34 @@ function buildTable(pitches) {
   return table;
 }
 
+/** Applique les deux filtres (ET) : masque les lignes et positions exclues. */
+function applyFilters(root) {
+  const stringValue = root.querySelector('input[name="string-filter"]:checked').value;
+  const noteValue = root.querySelector('input[name="note-filter"]:checked').value;
+
+  for (const row of root.querySelectorAll('tbody tr')) {
+    let onSelectedString = stringValue === ALL;
+    for (const chip of row.querySelectorAll('.chip')) {
+      const visible = stringValue === ALL || chip.dataset.string === stringValue;
+      chip.hidden = !visible;
+      if (visible) onSelectedString = true;
+    }
+
+    const matchesNote = noteValue === ALL || row.dataset.pitchClass === noteValue;
+    row.hidden = !(matchesNote && onSelectedString);
+  }
+}
+
 /** Rend le tableau de correspondances dans `mount`. */
 export function renderTable(mount, pitches = allPitches()) {
   mount.textContent = '';
-  mount.append(buildFilters(), buildTable(pitches));
+
+  const filters = buildFilters();
+  const table = buildTable(pitches);
+  mount.append(filters, table);
+
+  for (const input of filters.querySelectorAll('input[type="radio"]')) {
+    input.addEventListener('change', () => applyFilters(mount));
+  }
+  applyFilters(mount);
 }
