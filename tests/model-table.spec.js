@@ -94,3 +94,23 @@ test("affiche les 36 notes de Mi1 à Ré♯4 en ordre ascendant, sans filtre par
   await expect(page.locator('input[name="string-filter"][value="all"]')).toBeChecked();
   await expect(page.locator('input[name="note-filter"][value="all"]')).toBeChecked();
 });
+
+test("affiche la fréquence exacte de chaque note, à la française (décision 2)", async ({ page }) => {
+  await page.goto('/');
+
+  const rows = await readTable(page);
+
+  // Fréquences du tempérament égal à une décimale, virgule française,
+  // suffixes « Hz » — valeurs de référence indépendantes (La4 = 440 Hz).
+  expect(rows.map((row) => row.frequency)).toEqual(EXPECTED_NOTES.map((note) => note.frequency));
+
+  // Cas d'école de la spécification : Mi1 = 41,2 Hz, La1 = 55,0 Hz, Do3 = 130,8 Hz.
+  expect(rows[0].frequency).toBe('41,2 Hz');
+  expect(rows.find((row) => row.name === 'La1').frequency).toBe('55,0 Hz');
+  expect(rows.find((row) => row.name === 'Do3').frequency).toBe('130,8 Hz');
+
+  // Format français : virgule décimale, jamais de point dans la colonne.
+  const frequencyText = (await page.locator('#table .cell-frequency').allTextContents()).join(' ');
+  expect(frequencyText).not.toContain('.');
+  expect(frequencyText).toContain('41,2 Hz');
+});

@@ -69,6 +69,7 @@ function buildRow(pitch) {
 
   const frequency = document.createElement('td');
   frequency.className = 'cell-frequency';
+  frequency.textContent = pitch.frequencyLabel;
 
   const positions = document.createElement('td');
   positions.className = 'cell-positions';
