@@ -119,3 +119,26 @@ test('le manifeste est français, installable, et ses icônes existent à la tai
     expect(`${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`, `${icon.src} à la taille annoncée`).toBe(icon.sizes);
   }
 });
+
+test('portée et tableau côte à côte sur grand écran, empilées sur mobile (décision 10)', async ({ page }) => {
+  await page.goto('/');
+
+  const fretboardBox = await page.locator('#fretboard-section').boundingBox();
+  const staffBox = await page.locator('#staff-section').boundingBox();
+  const tableBox = await page.locator('#table-section').boundingBox();
+  expect(staffBox, 'la section portée est visible').not.toBeNull();
+  expect(tableBox, 'la section tableau est visible').not.toBeNull();
+
+  // Le manche occupe toujours toute la largeur, au-dessus des deux autres vues.
+  expect(fretboardBox.y + fretboardBox.height).toBeLessThanOrEqual(staffBox.y + 1);
+
+  if (test.info().project.name === 'desktop') {
+    // Grand écran : portée et tableau sur la même ligne, portée à gauche.
+    expect(Math.abs(staffBox.y - tableBox.y), 'même ligne de départ').toBeLessThan(1);
+    expect(staffBox.x).toBeLessThan(tableBox.x);
+    expect(staffBox.x + staffBox.width).toBeLessThanOrEqual(tableBox.x + 1);
+  } else {
+    // Écran étroit : les trois vues empilées dans l'ordre de la décision 10.
+    expect(staffBox.y + staffBox.height).toBeLessThanOrEqual(tableBox.y + 1);
+  }
+});

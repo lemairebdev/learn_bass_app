@@ -76,3 +76,16 @@ section h2 {
 .view {
   min-width: 0;
 }
+
+/* Grand écran (décision 10) : le manche garde toute la largeur au-dessus,
+   portée et tableau se partagent la ligne suivante. */
+@media (min-width: 60em) {
+  main {
+    grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+    align-items: start;
+  }
+
+  #fretboard-section {
+    grid-column: 1 / -1;
+  }
+}
