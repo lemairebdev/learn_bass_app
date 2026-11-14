@@ -1,7 +1,7 @@
 # 09 — Musical model (single source of truth) and correspondence table
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 08
 
 ## Goal

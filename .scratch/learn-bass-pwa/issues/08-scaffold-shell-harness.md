@@ -1,7 +1,7 @@
 # 08 — Scaffold the app shell, PWA assets, and Playwright harness
 
 Type: task
-Status: claimed
+Status: resolved
 
 ## Goal
 
@@ -37,3 +37,7 @@ Repo layout — later tickets depend on these exact paths:
 - From a clean checkout: `npm install && npx playwright install chromium && npm test` passes.
 - The shell renders the French UI in both viewports with decision-10 responsive behavior.
 - No runtime dependency, no build step, no absolute URL in any shipped file.
+
+## Comments
+
+- **Resolved 2026-11-14.** Implemented on branch `ticket/08-scaffold-shell-harness`, merged to `integration/learn-bass-pwa` as `d49ed59`. Suite: 10 passed, 0 failed (5 specs × desktop/mobile). Decisions recorded by the implementer: working title « Apprendre la basse » / short_name « Basse »; `http-server` as the dev server; desktop viewport 1440×900, mobile = Pixel 7 descriptor; English identifiers in code, French surface text; placeholder quarter-note icons; environment note — this machine lacks Chromium system libs, so `playwright.config.js` prepends `~/.cache/playwright-libs` via `LD_LIBRARY_PATH` when present (one-time setup documented in README). A guard spec now enforces decision 1 (no absolute URLs, no bare imports) across shipped files forever.
