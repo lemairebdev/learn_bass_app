@@ -9,7 +9,7 @@
 // le modèle et une petite étiquette de son nom écrit.
 //
 // L'API de surbrillance (deux niveaux, décision 5) est pilotée par le ticket
-// 12 : `setSelection(midiSonore)` marque la tête de la hauteur écrite
+// 12 : `highlight(midiSonore)` marque la tête de la hauteur écrite
 // correspondante (niveau primaire) et les autres octaves de la même classe de
 // hauteur (niveau secondaire). Chaque tête est un bouton (décision 11).
 import { allPitches, pitchClassName } from './model.js';
