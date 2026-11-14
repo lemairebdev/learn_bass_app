@@ -1,7 +1,7 @@
 # 10 — Fretboard view
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 08, 09
 
 ## Goal
@@ -26,3 +26,22 @@ The 4-string, 20-fret fretboard SVG: uniform columns with fret 0 for open string
 
 - The suite above passes on both viewports together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4210 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-14.** Implemented on branch `ticket/10-fretboard-view`, merged to `integration/learn-bass-pwa` as `3be1431`. Suite after merge: 43 passed, 0 failed, 1 intentionally skipped (mobile-only touch-target case on the desktop project).
+
+### API and DOM contract for ticket 12
+
+```js
+import { renderFretboard } from './fretboard.js';
+const view = renderFretboard(mountEl, { onSelect }); // onSelect(soundingMidi)
+view.highlight(selection); // sounding MIDI number or model pitch object { midi }
+view.clear();
+```
+
+- Cells: `#fretboard .fret-cell` with `data-string` (Mi|La|Ré|Sol), `data-fret` (0–20), `data-string-index`, `data-midi` (28–63), `role="button"`, `tabindex="0"`, `aria-label="Corde <nom>, case <numéro>"`; each holds `.cell-bg` and `.cell-note` (empty at rest).
+- Tiers: `data-highlight="primary" | "secondary"`, attribute absent at rest. Primary shows the cell's note name in full style; secondary shows it muted. Same convention should be used in the staff so `sync.spec.js` asserts both views uniformly.
+- `highlight()` also auto-scrolls the first primary cell into view, respecting the pinned column.
+- Layout hooks: `.fretboard-scroll` (scroller) › `.fretboard-pinned` (sticky open column + string names + `.fret-nut`) and `.fretboard-frets` (frets 1–20); `.fret-marker[data-marker-fret]` (double at 12), `.fret-number[data-fret]`, `.string-name[data-string]`.
+- Cell size 56×44 px, uniform columns; board ≈1238 px wide (fits desktop, scrolls on mobile). The `http(s)://` guard spec applies to shipped JS — the SVG namespace is derived from a parsed `<template>`; other SVG views must do the same.
