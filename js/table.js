@@ -128,7 +128,8 @@ function buildTable(pitches) {
  */
 function applyHighlight(rows, selection) {
   const midi = typeof selection === 'number' ? selection : selection?.midi;
-  const selected = typeof midi === 'number' ? rows.find((row) => Number(row.dataset.pitch) === midi) : null;
+  const selected =
+    typeof midi === 'number' ? rows.find((row) => Number(row.dataset.pitch) === midi) : null;
   const pitchClass = selected?.dataset.pitchClass ?? null;
 
   for (const row of rows) {

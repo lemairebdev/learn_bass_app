@@ -4,15 +4,20 @@
 // correspondances » sont montées, et la sélection unique (js/state.js) se
 // propage aux trois vues à chaque interaction (décisions 4 et 5). Le module
 // audio (ticket 13) branchera sa lecture sur `selection.onPlayRequest`.
-import { allPitches } from './model.js';
+import { allPitches, pitchForMidi } from './model.js';
 import { renderTable } from './table.js';
 import { renderFretboard } from './fretboard.js';
 import { renderStaff } from './staff.js';
 import { selection } from './state.js';
 
-/** Toute interaction résout une note sonore puis met à jour l'état unique. */
+/**
+ * Toute interaction résout sa note par le modèle (source de vérité) puis met à
+ * jour l'état unique : une case, une tête ou une ligne hors instrument est
+ * ignorée.
+ */
 function select(midi) {
-  selection.select(midi);
+  const pitch = pitchForMidi(midi);
+  if (pitch) selection.select(pitch.midi);
 }
 
 const table = document.getElementById('table');
