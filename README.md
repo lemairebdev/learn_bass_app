@@ -75,6 +75,20 @@ for f in *.deb; do dpkg -x "$f" ~/.cache/playwright-libs; done
 Le hors ligne repose sur le service worker (ticket 14) ; l'audio démarre au
 premier geste utilisateur (politique d'autodémarrage des navigateurs).
 
+## Vérification manuelle avant acceptation
+
+- [ ] Sur Chrome Android, installer depuis le menu du navigateur (« Ajouter à
+  l'écran d'accueil » / WebAPK), puis vérifier le lancement autonome et l'usage
+  hors ligne après un premier chargement.
+- [ ] Sur Chrome de bureau, installer l'application et vérifier son ouverture
+  dans une fenêtre dédiée ainsi que son entrée dans le lanceur ou la barre des
+  tâches.
+- [ ] Répéter l'installation et le lancement autonome sur Microsoft Edge de
+  bureau.
+- [ ] Sur Firefox de bureau, vérifier qu'aucune installation n'est proposée,
+  puis confirmer que l'app reste fonctionnelle hors ligne dans un onglet après
+  un premier chargement.
+
 ## Organisation du dépôt
 
 | Chemin | Rôle |
@@ -84,7 +98,7 @@ premier geste utilisateur (politique d'autodémarrage des navigateurs).
 | `manifest.webmanifest` | Installabilité PWA (français, `start_url` relative, standalone) |
 | `icons/icon-192.png`, `icons/icon-512.png` | Icônes provisoires, générées localement |
 | `js/` | Modules ES ; `js/app.js` est le bootstrap que les tickets suivants étendent |
-| `sw.js` | Service worker (ticket 14 — pas encore présent) |
+| `sw.js` | Service worker : précache complet, lecture cache-first et mise à jour acceptée par l'utilisateur |
 | `tests/` | Spécifications E2E Playwright, un fichier par ticket |
 | `package.json` | Dépendances **de développement uniquement** (`@playwright/test`, `http-server`) |
 
