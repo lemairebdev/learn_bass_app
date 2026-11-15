@@ -1,7 +1,7 @@
 # 14 — Service worker: offline and update flow
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 13
 
 ## Goal
@@ -28,3 +28,10 @@ Offline-first delivery: the service worker precaches the complete app shell and 
 
 - The suite above passes together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4214 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-15.** Implemented on branch `ticket/14-service-worker-offline`, merged to `integration/learn-bass-pwa` as `bb60c70`. Full suite: 88 passed, 4 expected skips, 0 failed.
+- `sw.js` precaches the full shell, including `js/audio.js`, uses a versioned cache, cache-first for same-origin GET requests, and removes obsolete app caches at activation. The update flow notifies the page that a new worker is ready, waits for the user's one-tap « Recharger » acceptance, then activates and reloads.
+- Offline E2E confirms the app reloads and remains interactive with network disabled. Update E2E confirms the notice, reload, new active cache, and removal of the previous cache.
+- README contains the manual install checklist for Chrome Android/WebAPK, desktop Chrome/Edge, and Firefox offline tab use.
