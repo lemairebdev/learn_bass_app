@@ -1,7 +1,7 @@
 # 13 — Audio module and header controls
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 12
 
 ## Goal
@@ -26,3 +26,12 @@ The synthesized bass voice and its controls: one shared, gesture-gated AudioCont
 
 - The suite above passes on both viewports together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4213 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-15.** Implemented on branch `ticket/13-audio-controls`, merged to `integration/learn-bass-pwa` as `94861b4`. Full suite: 84 passed, 4 expected skips, 0 failed.
+- Public API: `mountAudio(controlsMount)` is the sole export of `js/audio.js`. It restores preferences, renders the header controls, and subscribes to the shared `selection.onPlayRequest` hook. It imports `midiToFrequency` from the musical model.
+- Controls: range input `data-audio-control=\"volume\"`, aria-label `Volume`, 0–100 (default 80); button `data-audio-control=\"mute\"`, aria-label `Sourdine`, `aria-pressed`; localStorage keys `learn-bass.volume` and `learn-bass.mute`.
+- Voice: lazy shared AudioContext on the first play request, oscillator blend through a lowpass, short pluck envelope (<1s), latest note cuts the previous; mute silences via the master gain while selection/highlighting continues.
+- **Ticket 14 handoff:** include `js/audio.js` in the service-worker precache. The app shell scanner already picks up it and the audio specs; no other shell file was added by this ticket. Audio preferences are the only persisted app state.
+- Timbre is provisional pending manual listening; default volume 80 and a 0–100 slider are implementation choices.

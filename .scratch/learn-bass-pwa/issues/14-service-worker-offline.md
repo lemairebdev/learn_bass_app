@@ -1,7 +1,7 @@
 # 14 — Service worker: offline and update flow
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 13
 
 ## Goal
