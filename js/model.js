@@ -160,6 +160,7 @@ export function allPositions() {
 function buildPitch(midi) {
   const frequency = midiToFrequency(midi);
   const writtenMidi = midiToWrittenMidi(midi);
+  const placement = staffPlacement(writtenMidi);
   return Object.freeze({
     midi,
     name: midiToName(midi),
@@ -172,9 +173,7 @@ function buildPitch(midi) {
     written: Object.freeze({
       midi: writtenMidi,
       name: midiToName(writtenMidi),
-      step: staffStep(writtenMidi),
-      ledgerLines: staffLedgerLines(writtenMidi),
-      accidental: accidentalFor(writtenMidi),
+      ...placement,
     }),
   });
 }
