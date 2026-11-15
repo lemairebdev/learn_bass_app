@@ -99,6 +99,66 @@ test("aucun AudioContext n'est créé et aucun son n'est joué avant le premier 
   expect(snapshot.started.length).toBeGreaterThan(0);
 });
 
+test('un second clic sur la même note rejoue une nouvelle tonalité avec le même contexte unique', async ({
+  page,
+}) => {
+  await instrumentAudio(page);
+  await page.goto('/');
+
+  // Un premier tap crée l'unique contexte et joue la note…
+  const notehead = page.locator('#staff .notehead[data-midi="33"]');
+  await notehead.click();
+  const first = await audioSnapshot(page);
+  expect(first.started.length).toBeGreaterThan(0);
+
+  // …et un second tap sur la MÊME note rejoue une tonalité (décision 4) sans
+  // jamais créer de second contexte : un seul AudioContext partagé.
+  await notehead.click();
+  const second = await audioSnapshot(page);
+  expect(second.created).toBe(1);
+  expect(second.started.length).toBe(first.started.length * 2);
+  for (const frequency of second.started) {
+    expect(Math.abs(frequency - 55.0), 'fréquence de La1').toBeLessThan(0.05);
+  }
+});
+
+test('une nouvelle sélection coupe la tonalité précédente (dernier clic gagnant)', async ({
+  page,
+}) => {
+  await instrumentAudio(page);
+  await page.goto('/');
+
+  // Deux taps rapprochés : La1 (corde La à vide, MIDI 33, 55,0 Hz) puis
+  // Ré2 (corde Ré à vide, MIDI 38, 73,4 Hz).
+  await page.locator('#staff .notehead[data-midi="33"]').click();
+  await page.locator('#staff .notehead[data-midi="38"]').click();
+
+  const voices = await page.evaluate(() =>
+    window.__audio.oscillators.map((oscillator) => ({
+      frequency: oscillator.frequency.value,
+      startAt: oscillator.__startAt,
+      stoppedAt: oscillator.__stoppedAt,
+    })),
+  );
+
+  // La voix du Ré2 a bien démarré…
+  const reVoice = voices.filter((voice) => Math.abs(voice.frequency - 73.4) < 0.1);
+  expect(reVoice.length).toBeGreaterThan(0);
+  const reStart = Math.max(...reVoice.map((voice) => voice.startAt));
+
+  // …et la voix du La1 est coupée AVANT sa fin naturelle (décroissance ~1 s) :
+  // son arrêt est programmé au moment où la nouvelle note prend la main.
+  const laVoice = voices.filter((voice) => Math.abs(voice.frequency - 55.0) < 0.1);
+  expect(laVoice.length).toBeGreaterThan(0);
+  for (const voice of laVoice) {
+    expect(voice.stoppedAt, 'arrêt du La1 programmé').toBeDefined();
+    expect(voice.stoppedAt, 'coupé avant la fin naturelle').toBeLessThan(voice.startAt + 1);
+    expect(voice.stoppedAt, 'coupé quand la nouvelle note démarre').toBeLessThanOrEqual(
+      reStart + 0.06,
+    );
+  }
+});
+
 test('chaque sélection joue la fréquence exacte de la note (Mi1 → 41,2 Hz, Sol2 → 98,0 Hz)', async ({
   page,
 }) => {

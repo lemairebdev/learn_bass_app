@@ -24,6 +24,9 @@ let context = null;
 /** Le gain maître (volume × sourdine) vers la sortie. */
 let masterGain = null;
 
+/** La voix en cours — coupée dès qu'une nouvelle sélection arrive. */
+let activeVoice = null;
+
 /** Volume courant 0–100 ; persisté (ticket 13). */
 let volume = DEFAULT_VOLUME;
 
@@ -48,6 +51,26 @@ function ensureContext() {
 /** Le gain maître reflète volume et sourdine. */
 function applyMasterGain() {
   if (masterGain) masterGain.gain.value = muted ? 0 : volume / 100;
+}
+
+/**
+ * Coupe la voix en cours : dernier clic gagnant (décision 9). L'enveloppe est
+ * figée puis ramenée à zéro en quelques millisecondes, et les oscillateurs
+ * sont arrêtés — la note précédente ne traîne pas sous la nouvelle.
+ */
+function cutActiveVoice() {
+  const voice = activeVoice;
+  activeVoice = null;
+  if (!voice) return;
+  const now = context.currentTime;
+  try {
+    voice.envelope.gain.cancelScheduledValues(now);
+    voice.envelope.gain.setValueAtTime(voice.envelope.gain.value, now);
+    voice.envelope.gain.linearRampToValueAtTime(0.0001, now + 0.02);
+    for (const oscillator of voice.oscillators) oscillator.stop(now + 0.03);
+  } catch {
+    // Voix déjà achevée (fin de la décroissance naturelle) : rien à couper.
+  }
 }
 
 /**
@@ -90,12 +113,15 @@ function scheduleVoice(frequency) {
     oscillator.stop(now + 1);
     oscillators.push(oscillator);
   }
+
+  activeVoice = { envelope, oscillators };
 }
 
 /** Joue la note sonore sélectionnée (numéro MIDI). */
 function play(midi) {
   if (midi === null || midi === undefined) return;
   ensureContext();
+  cutActiveVoice();
   scheduleVoice(midiToFrequency(midi));
 }
 
