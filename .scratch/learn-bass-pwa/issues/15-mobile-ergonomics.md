@@ -1,7 +1,7 @@
 # 15 — Mobile ergonomics: tap targets and auto-scroll validation
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 12
 
 ## Goal
@@ -25,3 +25,10 @@ Validate and tune the touch experience on the mobile viewport: fret cells and st
 
 - The suite above passes together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4215 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-15.** Implemented on branch `ticket/15-mobile-ergonomics`, merged to `integration/learn-bass-pwa` as `47508ce`. Implementer verified the full suite on the merged branch: 98 passed, 12 skipped, 0 failed.
+- No application/style changes were needed: measured targets already meet the requirement. On Pixel 7 (412×839 CSS px), fretboard cells are 56×44 px; staff notehead hit areas are 46×306 px. Center taps selected the intended positions/pitches across all 84 cells and all 36 noteheads.
+- Verified mobile auto-scroll for fretboard, staff, and filtered table; the pinned nut stays visible at high frets and high-fret selection can scroll back to the nut. Desktop has no horizontal page overflow and keeps the fretboard full-width with the staff and table side by side.
+- Added `tests/ergonomics.spec.js` only. The internal staff strip still scrolls horizontally on desktop (documented in ticket 11); table rows remain ~38 px, outside this ticket's required tap targets.
