@@ -49,7 +49,7 @@ The app resolves each interaction through `pitchForMidi()` before calling `selec
 
 ### Table and view highlight contracts
 
-- `renderTable(mount, pitches = allPitches(), { onSelect } = {})` now returns `{ highlight, clear, mount, rows }` and calls `onSelect(soundingMidi)` on row click/Enter/Space. `highlight` accepts a MIDI number or `{midi}`, applies `data-highlight=\"primary|secondary\"` and `.is-primary` / `.is-secondary`, and scrolls the primary row into view. Filtering continues to use `hidden`, separate from highlight classes.
+- `renderTable(mount, pitches = allPitches(), { onSelect } = {})` now returns `{ highlight, clear, mount, rows }` and calls `onSelect(soundingMidi)` on row pointer click. The final review removed Enter/Space activation and button roles/tab stops to match the pointer/tap-only scope. `highlight` accepts a MIDI number or `{midi}`, applies `data-highlight=\"primary|secondary\"` and `.is-primary` / `.is-secondary`, and scrolls the primary row into view. Filtering continues to use `hidden`, separate from highlight classes.
 - Fretboard and staff already share the same `highlight(midi)` / `clear()` interface and `data-highlight=\"primary|secondary\"` convention.
 - Secondary treatment validated in all views: fretboard uses pale blue cells and muted labels, staff uses muted gray noteheads/labels, table uses a very light gray row without the primary's left rule or bold text; primary remains visibly stronger.
 - Desktop/mobile suite covers all interaction directions, Do3's four positions, range ends, open strings, a sharp, unchanged visual state on reselect, reset on reload, and mobile auto-scroll for the staff/fretboard/table.

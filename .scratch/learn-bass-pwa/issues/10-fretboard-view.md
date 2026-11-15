@@ -40,8 +40,9 @@ view.highlight(selection); // sounding MIDI number or model pitch object { midi 
 view.clear();
 ```
 
-- Cells: `#fretboard .fret-cell` with `data-string` (Mi|La|Ré|Sol), `data-fret` (0–20), `data-string-index`, `data-midi` (28–63), `role="button"`, `tabindex="0"`, `aria-label="Corde <nom>, case <numéro>"`; each holds `.cell-bg` and `.cell-note` (empty at rest).
+- Cells: `#fretboard .fret-cell` with `data-string` (Mi|La|Ré|Sol), `data-fret` (0–20), `data-string-index`, `data-midi` (28–63), and `aria-label="Corde <nom>, case <numéro>"`; each holds `.cell-bg` and `.cell-note` (empty at rest). The final review removed button roles/tab stops and Enter/Space handling to match the pointer/tap-only scope while preserving the required data/aria contract.
 - Tiers: `data-highlight="primary" | "secondary"`, attribute absent at rest. Primary shows the cell's note name in full style; secondary shows it muted. Same convention should be used in the staff so `sync.spec.js` asserts both views uniformly.
 - `highlight()` also auto-scrolls the first primary cell into view, respecting the pinned column.
 - Layout hooks: `.fretboard-scroll` (scroller) › `.fretboard-pinned` (sticky open column + string names + `.fret-nut`) and `.fretboard-frets` (frets 1–20); `.fret-marker[data-marker-fret]` (double at 12), `.fret-number[data-fret]`, `.string-name[data-string]`.
 - Cell size 56×44 px, uniform columns; board ≈1238 px wide (fits desktop, scrolls on mobile). The `http(s)://` guard spec applies to shipped JS — the SVG namespace is derived from a parsed `<template>`; other SVG views must do the same.
+- The final review extracted click wiring into `js/pointer-selection.js` (`wirePointerSelection(elements, midiForElement, onSelect)`), shared by all three views.

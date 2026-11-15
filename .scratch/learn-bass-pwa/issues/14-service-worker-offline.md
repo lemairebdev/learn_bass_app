@@ -35,3 +35,4 @@ Offline-first delivery: the service worker precaches the complete app shell and 
 - `sw.js` precaches the full shell, including `js/audio.js`, uses a versioned cache, cache-first for same-origin GET requests, and removes obsolete app caches at activation. The update flow notifies the page that a new worker is ready, waits for the user's one-tap « Recharger » acceptance, then activates and reloads.
 - Offline E2E confirms the app reloads and remains interactive with network disabled. Update E2E confirms the notice, reload, new active cache, and removal of the previous cache.
 - README contains the manual install checklist for Chrome Android/WebAPK, desktop Chrome/Edge, and Firefox offline tab use.
+- **Final review update:** the refactor added `js/pointer-selection.js`; it is included in the precache and the cache version is now v2 so clients receive the complete revised shell atomically. The update test verifies replacement of the previous cache.
