@@ -73,6 +73,47 @@ test("affiche 36 têtes de note chromatiques ascendantes, de Mi2 à Ré♯5 (dé
   expect(heads[35].label).toBe('Ré♯5');
 });
 
+test('identifie et dessine la clé de fa sur la portée', async ({ page }) => {
+  await page.goto('/');
+
+  const clef = page.getByRole('img', { name: 'Clé de fa' });
+  await expect(clef).toBeVisible();
+  await expect(clef.locator('path')).toHaveCount(1);
+  await expect(clef.locator('circle')).toHaveCount(2);
+});
+
+test('affiche les 36 têtes et leurs étiquettes dans la portée de bureau sans défilement', async ({
+  page,
+}) => {
+  test.skip(test.info().project.name !== 'desktop', 'réservé au viewport de bureau');
+  await page.goto('/');
+
+  const metrics = await page.evaluate(() => {
+    const scroller = document.querySelector('#staff .staff-scroll');
+    const bounds = scroller.getBoundingClientRect();
+    const noteheads = [...scroller.querySelectorAll('.notehead')];
+    return {
+      scrollWidth: scroller.scrollWidth,
+      clientWidth: scroller.clientWidth,
+      visible: noteheads.map((notehead) => {
+        const head = notehead.querySelector('.notehead-head').getBoundingClientRect();
+        const label = notehead.querySelector('.notehead-label').getBoundingClientRect();
+        return {
+          headWithinScroller: head.left >= bounds.left && head.right <= bounds.right,
+          labelWithinScroller: label.left >= bounds.left && label.right <= bounds.right,
+          label: notehead.querySelector('.notehead-label').textContent.trim(),
+        };
+      }),
+    };
+  });
+
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+  expect(metrics.visible).toHaveLength(36);
+  expect(metrics.visible.every(({ headWithinScroller, labelWithinScroller, label }) =>
+    headWithinScroller && labelWithinScroller && label.length > 0,
+  )).toBe(true);
+});
+
 test("chaque étiquette écrite est le nom sonore de la table élevé d'une octave (décisions 14–15)", async ({ page }) => {
   await page.goto('/');
 
@@ -179,9 +220,9 @@ test('chaque tête porte le contrat DOM français de sa hauteur écrite (décisi
     expect(head.ariaLabel, `aria-label de ${head.label}`).toContain(head.label);
     expect(head.ariaLabel).toMatch(/écrit/i);
 
-    // La tête entière est une cible de clic : rôle bouton, focusable.
-    expect(head.role).toBe('button');
-    expect(head.tabindex).toBe('0');
+    // Le contrat français est conservé sans annoncer un bouton clavier.
+    expect(head.role).toBeNull();
+    expect(head.tabindex).toBeNull();
   }
 
   // La première et la dernière tête exposent bien les bornes écrites.

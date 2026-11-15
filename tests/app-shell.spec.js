@@ -81,10 +81,10 @@ test("affiche l'en-tête puis manche, portée et tableau dans cet ordre (décisi
   await expect(page.locator('main section')).toHaveCount(3);
 
   // Ordre du document : en-tête, puis les trois sections dans l'ordre 10.
-  const ordre = await page.evaluate(() =>
+  const order = await page.evaluate(() =>
     [...document.querySelectorAll('header, main > section')].map((el) => el.id || el.tagName.toLowerCase()),
   );
-  expect(ordre).toEqual(['header', 'fretboard-section', 'staff-section', 'table-section']);
+  expect(order).toEqual(['header', 'fretboard-section', 'staff-section', 'table-section']);
 
   // Points de montage que les vues rempliront (tickets 09–12), et conteneur
   // des contrôles audio dans l'en-tête (ticket 13).

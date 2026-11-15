@@ -55,14 +55,16 @@ test("chaque case porte un aria-label français « Corde X, case N » (décision
       string: el.dataset.string,
       fret: el.dataset.fret,
       role: el.getAttribute('role'),
+      tabindex: el.getAttribute('tabindex'),
       label: el.getAttribute('aria-label'),
     })),
   );
   expect(cells).toHaveLength(84);
 
-  // Chaque case identifie sa corde et sa case ; la case entière est la cible.
+  // Chaque case garde son identité française sans se présenter comme un bouton clavier.
   for (const cell of cells) {
-    expect(cell.role, `rôle de ${cell.string}·${cell.fret}`).toBe('button');
+    expect(cell.role, `rôle de ${cell.string}·${cell.fret}`).toBeNull();
+    expect(cell.tabindex, `tabindex de ${cell.string}·${cell.fret}`).toBeNull();
     expect(cell.label, `aria-label de ${cell.string}·${cell.fret}`).toBe(
       `Corde ${cell.string}, case ${cell.fret}`,
     );

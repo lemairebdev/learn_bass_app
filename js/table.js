@@ -3,6 +3,7 @@
 // le modèle musical (js/model.js). Deux filtres combinés par ET : corde et nom
 // de note ; par défaut, aucun filtre.
 import { allPitches, pitchClassName, positionLabel, STRINGS, PITCH_CLASS_NAMES } from './model.js';
+import { wirePointerSelection } from './pointer-selection.js';
 
 const ALL = 'all';
 
@@ -76,7 +77,6 @@ function buildRow(pitch) {
   row.dataset.note = pitch.name;
   row.dataset.pitchClass = pitchClassName(pitch.pitchClass);
   // Cible de clic : la ligne entière sélectionne la note (câblage ticket 12).
-  row.tabIndex = 0;
   row.setAttribute(
     'aria-label',
     `${pitch.name} — ${pitch.frequencyLabel} — ${positionLabels.join(', ')}`,
@@ -150,20 +150,6 @@ function applyHighlight(rows, selection) {
   if (selected) selected.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
-/** Câble la sélection : la ligne entière est la cible (clic, Entrée, Espace). */
-function wireRowSelection(rows, onSelect) {
-  for (const row of rows) {
-    const select = () => onSelect(Number(row.dataset.pitch));
-    row.addEventListener('click', select);
-    row.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        select();
-      }
-    });
-  }
-}
-
 /** Applique les deux filtres (ET) : masque les lignes et positions exclues. */
 function applyFilters(root) {
   const stringValue = root.querySelector('input[name="string-filter"]:checked').value;
@@ -193,8 +179,8 @@ function applyFilters(root) {
  *   amène la ligne primaire dans la zone visible ;
  * - `clear()` : efface toute surbrillance.
  *
- * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
- * sur une ligne — le câblage de la sélection appartient au ticket 12.
+ * `options.onSelect(soundingMidi)` est appelé à chaque clic pointeur sur une
+ * ligne — le câblage de la sélection appartient au ticket 12.
  */
 export function renderTable(mount, pitches = allPitches(), { onSelect } = {}) {
   mount.textContent = '';
@@ -209,7 +195,9 @@ export function renderTable(mount, pitches = allPitches(), { onSelect } = {}) {
   applyFilters(mount);
 
   const rows = [...table.querySelectorAll('tbody tr')];
-  if (typeof onSelect === 'function') wireRowSelection(rows, onSelect);
+  if (typeof onSelect === 'function') {
+    wirePointerSelection(rows, (row) => row.dataset.pitch, onSelect);
+  }
 
   return {
     highlight(selection) {

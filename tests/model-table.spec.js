@@ -71,6 +71,8 @@ async function readTable(page) {
       frequency: tr.querySelector('.cell-frequency')?.textContent.trim() ?? null,
       chips: [...tr.querySelectorAll('.chip:not([hidden])')].map((chip) => chip.textContent.trim()),
       label: tr.getAttribute('aria-label'),
+      role: tr.getAttribute('role'),
+      tabindex: tr.getAttribute('tabindex'),
     })),
   );
 }
@@ -253,7 +255,7 @@ test("les filtres proposent toutes les cordes et les 12 classes de hauteur (déc
   ]);
 });
 
-test("chaque ligne porte le contrat DOM de la note et l'affordance de sélection (décision 11)", async ({ page }) => {
+test("chaque ligne porte le contrat DOM français sans annoncer une commande clavier (décision 11)", async ({ page }) => {
   await page.goto('/');
 
   const rows = await readTable(page);
@@ -269,11 +271,8 @@ test("chaque ligne porte le contrat DOM de la note et l'affordance de sélection
     for (const chip of row.chips) expect(row.label).toContain(chip);
   }
 
-  // La ligne entière est une cible de clic : focusable, avec le numéro MIDI.
-  const focusable = await page.locator('#table tbody tr').evaluateAll((trs) =>
-    trs.every((tr) => tr.getAttribute('tabindex') === '0'),
-  );
-  expect(focusable).toBe(true);
+  // La sélection au pointeur ne prétend pas fournir une commande clavier.
+  expect(rows.every((row) => row.role === null && row.tabindex === null)).toBe(true);
   await expect(page.locator('#table tbody tr').first()).toHaveAttribute('data-pitch', '28');
   await expect(page.locator('#table tbody tr').last()).toHaveAttribute('data-pitch', '63');
 });
