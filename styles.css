@@ -51,6 +51,41 @@ header h1 {
   margin-inline-start: auto;
 }
 
+/* Curseur de volume et bascule de sourdine (ticket 13, décision 9). */
+#audio-controls input[type="range"] {
+  width: 8rem;
+  accent-color: #0f6d8f;
+}
+
+#audio-controls button {
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+/* État enfoncé de la sourdine : lisible sans se confondre avec le repos. */
+#audio-controls button[aria-pressed="true"] {
+  background: #0f6d8f;
+  border-color: #0f6d8f;
+}
+
+#audio-controls input[type="range"]:focus-visible,
+#audio-controls button:focus-visible {
+  outline: 2px solid #7fc4dd;
+  outline-offset: 2px;
+}
+
+/* Sur écran étroit, l'en-tête garde ses contrôles compacts. */
+@media (max-width: 40em) {
+  #audio-controls input[type="range"] {
+    width: 5.5rem;
+  }
+}
+
 /* Trois vues empilées par défaut (écrans étroits) ; sur grand écran, portée
    et tableau se partagent une ligne sous le manche — voir le @media plus bas. */
 main {
