@@ -323,11 +323,6 @@ section h2 {
   fill: var(--color-bg);
 }
 
-.fret-cell:focus-visible {
-  outline: 2px solid var(--color-header);
-  outline-offset: -2px;
-}
-
 /* Niveau primaire : la note exacte, en plein style. */
 .fret-cell[data-highlight="primary"] .cell-bg {
   fill: var(--color-header);
@@ -378,6 +373,10 @@ section h2 {
   stroke-width: 1;
 }
 
+#staff .bass-clef {
+  fill: #1c2430;
+}
+
 #staff .notehead {
   cursor: pointer;
 }
@@ -404,11 +403,6 @@ section h2 {
 
 #staff .notehead-label {
   fill: #56606d;
-}
-
-#staff .notehead:focus-visible .notehead-head {
-  stroke: #0f2437;
-  stroke-width: 2.5;
 }
 
 /* Niveau primaire : la hauteur exacte — accent net, étiquette affirmée. */

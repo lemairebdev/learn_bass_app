@@ -28,7 +28,7 @@ async function startControlledServer() {
     try {
       let body = await readFile(file);
       if (relativePath === 'sw.js' && version === 2) {
-        body = Buffer.from(body.toString('utf8').replaceAll('learn-bass-app-v1', 'learn-bass-app-v2'));
+        body = Buffer.from(body.toString('utf8').replaceAll('learn-bass-app-v2', 'learn-bass-app-v3'));
       }
       response.writeHead(200, { 'content-type': contentTypes[extname(file)] ?? 'application/octet-stream' });
       response.end(body);
@@ -80,8 +80,8 @@ test('propose le rechargement après installation et active la nouvelle version 
       page.evaluate(async () => {
         const names = await caches.keys();
         return {
-          current: names.includes('learn-bass-app-v2'),
-          previous: names.includes('learn-bass-app-v1'),
+          current: names.includes('learn-bass-app-v3'),
+          previous: names.includes('learn-bass-app-v2'),
         };
       }),
     ).toEqual({ current: true, previous: false });

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'learn-bass-app-v1';
+const CACHE_NAME = 'learn-bass-app-v2';
 const CACHE_PREFIX = 'learn-bass-app-';
 const APP_SHELL = [
   './',
@@ -8,6 +8,7 @@ const APP_SHELL = [
   './js/audio.js',
   './js/fretboard.js',
   './js/model.js',
+  './js/pointer-selection.js',
   './js/staff.js',
   './js/state.js',
   './js/table.js',

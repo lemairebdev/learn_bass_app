@@ -11,10 +11,11 @@
 // étroit, la colonne à vide reste épinglée pendant que les cases défilent.
 //
 // Contrat DOM des cases (décision 11) : `data-string`, `data-fret`,
-// `data-string-index`, `data-midi`, `role="button"`, `tabindex="0"` et
-// `aria-label` = « Corde <nom>, case <numéro> ». Les surbrillances se marquent
-// par `data-highlight` = `primary` ou `secondary` (aucun attribut au repos).
+// `data-string-index`, `data-midi` et `aria-label` = « Corde <nom>, case <numéro> ».
+// Les surbrillances se marquent par `data-highlight` = `primary` ou `secondary`
+// (aucun attribut au repos).
 import { STRINGS, FRET_MIN, FRET_MAX, positionMidi, midiToName, pitchForMidi } from './model.js';
+import { wirePointerSelection } from './pointer-selection.js';
 
 // Espace de noms SVG, lu depuis un fragment analysé par le parseur HTML plutôt
 // qu'écrit en clair : la garde de la coquille interdit toute URL http(s) dans
@@ -88,8 +89,6 @@ function buildCell(stringIndex, fret, x, y) {
     'data-fret': fret,
     'data-string-index': stringIndex,
     'data-midi': positionMidi(stringIndex, fret),
-    role: 'button',
-    tabindex: '0',
     'aria-label': `Corde ${stringName}, case ${fret}`,
   });
 
@@ -297,20 +296,6 @@ function scrollCellIntoView(scroller, cell) {
   }
 }
 
-/** Câble les interactions de pointeur : la case entière est la cible. */
-function wirePointerEvents(cells, onSelect) {
-  for (const cell of cells) {
-    const select = () => onSelect(Number(cell.dataset.midi));
-    cell.addEventListener('click', select);
-    cell.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        select();
-      }
-    });
-  }
-}
-
 /**
  * Rend le manche dans `mount`.
  *
@@ -320,8 +305,8 @@ function wirePointerEvents(cells, onSelect) {
  *   accepte un numéro MIDI ou l'objet note du modèle ;
  * - `clear()` : efface toute surbrillance.
  *
- * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
- * sur une case — le câblage de la sélection appartient au ticket 12.
+ * `options.onSelect(soundingMidi)` est appelé à chaque clic pointeur sur une
+ * case — le câblage de la sélection appartient au ticket 12.
  */
 export function renderFretboard(mount, { onSelect } = {}) {
   mount.textContent = '';
@@ -335,7 +320,9 @@ export function renderFretboard(mount, { onSelect } = {}) {
   scroller.append(pinned.element, frets.element);
   mount.append(scroller);
 
-  if (typeof onSelect === 'function') wirePointerEvents(cells, onSelect);
+  if (typeof onSelect === 'function') {
+    wirePointerSelection(cells, (cell) => cell.dataset.midi, onSelect);
+  }
 
   return {
     highlight(soundingMidi) {

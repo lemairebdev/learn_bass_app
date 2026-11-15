@@ -13,6 +13,7 @@
 // correspondante (niveau primaire) et les autres octaves de la même classe de
 // hauteur (niveau secondaire). La sélection est pilotée par pointeur.
 import { allPitches, pitchClassName } from './model.js';
+import { wirePointerSelection } from './pointer-selection.js';
 
 // Espace de noms SVG assemblé par morceaux : aucun fichier livré ne doit
 // contenir d'URL absolue, même pour un espace de noms (tests/app-shell.spec.js).
@@ -59,7 +60,7 @@ function svgElement(name, attributes = {}, text = null) {
 }
 
 /** Les cinq lignes de la portée, sur toute la largeur du ruban. */
-function buildStaffLines(totalWidth, noteStart) {
+function buildStaffLines(totalWidth, noteStart, horizontalPad) {
   const group = svgElement('g', { class: 'staff-lines' });
   for (const step of STAFF_LINE_STEPS) {
     const y = stepY(step);
@@ -67,7 +68,7 @@ function buildStaffLines(totalWidth, noteStart) {
       svgElement('line', {
         class: 'staff-line',
         x1: noteStart,
-        x2: totalWidth - DESKTOP_PAD_X,
+        x2: totalWidth - horizontalPad,
         y1: y,
         y2: y,
       }),
@@ -175,9 +176,9 @@ function buildNotehead(pitch, index, totalHeight, geometry) {
       {
         class: 'notehead-label',
         x: centerX,
-          y: labelY,
-          'text-anchor': 'middle',
-          'font-size': geometry.compact ? 11 : LABEL_FONT_SIZE,
+        y: labelY,
+        'text-anchor': 'middle',
+        'font-size': geometry.compact ? 11 : LABEL_FONT_SIZE,
       },
       pitch.written.name,
     ),
@@ -263,7 +264,7 @@ export function renderStaff(mount, { pitches = allPitches(), onSelect } = {}) {
     svgElement('circle', { cx: 37, cy: 161, r: 2.2 }),
     svgElement('circle', { cx: 37, cy: 175, r: 2.2 }),
   );
-  svg.append(bassClef, buildStaffLines(totalWidth, noteStart));
+  svg.append(bassClef, buildStaffLines(totalWidth, noteStart, horizontalPad));
 
   const noteheads = svgElement('g', { class: 'noteheads' });
   pitches.forEach((pitch, index) => {
@@ -306,9 +307,7 @@ export function renderStaff(mount, { pitches = allPitches(), onSelect } = {}) {
   }
 
   if (typeof onSelect === 'function') {
-    for (const head of heads) {
-      head.addEventListener('click', () => onSelect(Number(head.getAttribute('data-midi'))));
-    }
+    wirePointerSelection(heads, (head) => head.getAttribute('data-midi'), onSelect);
   }
 
   return { highlight, clear, mount, scroller, svg, pitches };
