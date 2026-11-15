@@ -220,9 +220,9 @@ test('chaque tête porte le contrat DOM français de sa hauteur écrite (décisi
     expect(head.ariaLabel, `aria-label de ${head.label}`).toContain(head.label);
     expect(head.ariaLabel).toMatch(/écrit/i);
 
-    // La tête entière est une cible de clic : rôle bouton, focusable.
-    expect(head.role).toBe('button');
-    expect(head.tabindex).toBe('0');
+    // Le contrat français est conservé sans annoncer un bouton clavier.
+    expect(head.role).toBeNull();
+    expect(head.tabindex).toBeNull();
   }
 
   // La première et la dernière tête exposent bien les bornes écrites.

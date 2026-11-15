@@ -11,7 +11,7 @@
 // L'API de surbrillance (deux niveaux, décision 5) est pilotée par le ticket
 // 12 : `highlight(midiSonore)` marque la tête de la hauteur écrite
 // correspondante (niveau primaire) et les autres octaves de la même classe de
-// hauteur (niveau secondaire). Chaque tête est un bouton (décision 11).
+// hauteur (niveau secondaire). La sélection est pilotée par pointeur.
 import { allPitches, pitchClassName } from './model.js';
 
 // Espace de noms SVG assemblé par morceaux : aucun fichier livré ne doit
@@ -19,7 +19,7 @@ import { allPitches, pitchClassName } from './model.js';
 const SVG_NS = 'http' + '://www.w3.org/2000/svg';
 
 // Géométrie du ruban (unités du viewBox, 1 unité = 1 px au rendu).
-const COLUMN_WIDTH = 46; // largeur d'une colonne = cible tactile (≥ 44 px)
+const MOBILE_COLUMN_WIDTH = 46; // largeur d'une colonne = cible tactile (≥ 44 px)
 const STEP_HEIGHT = 11; // écart entre deux degrés conjoints (demi-interligne)
 const TOP_STEP = 19; // degré réservé au sommet (au-dessus de Ré♯5, degré 18)
 const BOTTOM_STEP = -4; // degré réservé au bas (sous Mi2, degré −2)
@@ -27,6 +27,8 @@ const STAFF_LINE_STEPS = [0, 2, 4, 6, 8]; // ligne inférieure (Sol2) → supér
 const BOTTOM_LINE_STEP = STAFF_LINE_STEPS[0];
 const TOP_LINE_STEP = STAFF_LINE_STEPS[STAFF_LINE_STEPS.length - 1];
 const PAD_X = 24; // marge horizontale à chaque extrémité
+const DESKTOP_PAD_X = 12;
+const CLEF_WIDTH = 36;
 const TOP_MARGIN = 24; // marge au-dessus du degré réservé le plus haut
 const HEAD_RADIUS_X = 8;
 const HEAD_RADIUS_Y = 5.6;
@@ -42,7 +44,9 @@ function stepY(step) {
 }
 
 const LABEL_Y = stepY(BOTTOM_STEP) + LABEL_GAP;
-const SVG_HEIGHT = Math.ceil(LABEL_Y + 9);
+const MOBILE_SVG_HEIGHT = Math.ceil(LABEL_Y + 9);
+const DESKTOP_LABEL_ROWS = 4;
+const DESKTOP_LABEL_GAP = 13;
 
 /** Crée un élément SVG avec ses attributs, sans aucune dépendance externe. */
 function svgElement(name, attributes = {}, text = null) {
@@ -55,15 +59,15 @@ function svgElement(name, attributes = {}, text = null) {
 }
 
 /** Les cinq lignes de la portée, sur toute la largeur du ruban. */
-function buildStaffLines(totalWidth) {
+function buildStaffLines(totalWidth, noteStart) {
   const group = svgElement('g', { class: 'staff-lines' });
   for (const step of STAFF_LINE_STEPS) {
     const y = stepY(step);
     group.append(
       svgElement('line', {
         class: 'staff-line',
-        x1: PAD_X,
-        x2: totalWidth - PAD_X,
+        x1: noteStart,
+        x2: totalWidth - DESKTOP_PAD_X,
         y1: y,
         y2: y,
       }),
@@ -107,9 +111,11 @@ function buildLedgers(written, centerX) {
  * Une tête de note : une cible tactile pleine colonne (transparente), les lignes
  * supplémentaires, la tête, le ♯ éventuel et l'étiquette du nom écrit.
  */
-function buildNotehead(pitch, index, totalHeight) {
-  const centerX = PAD_X + index * COLUMN_WIDTH + COLUMN_WIDTH / 2;
+function buildNotehead(pitch, index, totalHeight, geometry) {
+  const centerX = geometry.noteStart + index * geometry.columnWidth + geometry.columnWidth / 2;
   const y = stepY(pitch.written.step);
+  const labelY =
+    LABEL_Y + (geometry.compact ? (index % DESKTOP_LABEL_ROWS) * DESKTOP_LABEL_GAP : 0);
 
   const notehead = svgElement('g', {
     class: 'notehead',
@@ -121,8 +127,6 @@ function buildNotehead(pitch, index, totalHeight) {
     'data-pitch-class': pitchClassName(pitch.pitchClass),
     'data-written-pitch': pitch.written.midi,
     'data-written-name': pitch.written.name,
-    role: 'button',
-    tabindex: '0',
     'aria-label': `Note écrite ${pitch.written.name} (son ${pitch.name})`,
   });
 
@@ -130,9 +134,9 @@ function buildNotehead(pitch, index, totalHeight) {
   notehead.append(
     svgElement('rect', {
       class: 'notehead-hit',
-      x: PAD_X + index * COLUMN_WIDTH,
+      x: geometry.noteStart + index * geometry.columnWidth,
       y: 0,
-      width: COLUMN_WIDTH,
+      width: geometry.columnWidth,
       height: totalHeight,
     }),
   );
@@ -144,7 +148,7 @@ function buildNotehead(pitch, index, totalHeight) {
       class: 'notehead-head',
       cx: centerX,
       cy: y,
-      rx: HEAD_RADIUS_X,
+      rx: Math.min(HEAD_RADIUS_X, geometry.columnWidth * 0.38),
       ry: HEAD_RADIUS_Y,
     }),
   );
@@ -171,9 +175,9 @@ function buildNotehead(pitch, index, totalHeight) {
       {
         class: 'notehead-label',
         x: centerX,
-        y: LABEL_Y,
-        'text-anchor': 'middle',
-        'font-size': LABEL_FONT_SIZE,
+          y: labelY,
+          'text-anchor': 'middle',
+          'font-size': geometry.compact ? 11 : LABEL_FONT_SIZE,
       },
       pitch.written.name,
     ),
@@ -209,20 +213,6 @@ function scrollNoteheadIntoView(scroller, notehead) {
   }
 }
 
-/** Câble les interactions de pointeur : la tête entière est la cible. */
-function wirePointerEvents(noteheads, onSelect) {
-  for (const notehead of noteheads) {
-    const select = () => onSelect(Number(notehead.getAttribute('data-midi')));
-    notehead.addEventListener('click', select);
-    notehead.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        select();
-      }
-    });
-  }
-}
-
 /**
  * Rend la portée en clé de fa dans `mount`.
  *
@@ -235,27 +225,49 @@ function wirePointerEvents(noteheads, onSelect) {
  *   la zone visible ;
  * - `clear()` : efface toute surbrillance.
  *
- * `options.onSelect(soundingMidi)` est appelé à chaque clic (ou Entrée/Espace)
- * sur une tête — le câblage de la sélection appartient au ticket 12.
+ * `options.onSelect(soundingMidi)` est appelé à chaque clic pointeur sur une
+ * tête — le câblage de la sélection appartient au ticket 12.
  */
 export function renderStaff(mount, { pitches = allPitches(), onSelect } = {}) {
   mount.textContent = '';
 
-  const totalWidth = PAD_X * 2 + pitches.length * COLUMN_WIDTH;
+  const compact = window.matchMedia('(min-width: 60em)').matches;
+  const horizontalPad = compact ? DESKTOP_PAD_X : PAD_X;
+  const noteStart = CLEF_WIDTH + horizontalPad;
+  const availableColumnWidth = (mount.clientWidth - noteStart - horizontalPad) / pitches.length;
+  const columnWidth = compact
+    ? Math.max(10, Math.min(MOBILE_COLUMN_WIDTH, availableColumnWidth))
+    : MOBILE_COLUMN_WIDTH;
+  const labelRowsHeight = compact ? (DESKTOP_LABEL_ROWS - 1) * DESKTOP_LABEL_GAP : 0;
+  const totalWidth = noteStart + pitches.length * columnWidth + horizontalPad;
+  const totalHeight = Math.ceil(MOBILE_SVG_HEIGHT + labelRowsHeight);
+  const geometry = { compact, columnWidth, noteStart };
   const svg = svgElement('svg', {
     class: 'staff-svg',
-    viewBox: `0 0 ${totalWidth} ${SVG_HEIGHT}`,
+    viewBox: `0 0 ${totalWidth} ${totalHeight}`,
     width: totalWidth,
-    height: SVG_HEIGHT,
+    height: totalHeight,
     role: 'group',
     'aria-label': 'Portée en clé de fa',
   });
   svg.append(svgElement('title', {}, 'Portée en clé de fa'));
-  svg.append(buildStaffLines(totalWidth));
+  const bassClef = svgElement('g', {
+    class: 'bass-clef',
+    role: 'img',
+    'aria-label': 'Clé de fa',
+  });
+  bassClef.append(
+    svgElement('path', {
+      d: 'M 26 138 C 16 141 10 151 10 162 C 10 172 15 181 23 185 C 30 189 36 183 33 177 C 31 172 25 172 22 177 C 19 181 17 176 18 170 C 19 162 24 154 31 150 C 39 145 36 136 26 138 Z',
+    }),
+    svgElement('circle', { cx: 37, cy: 161, r: 2.2 }),
+    svgElement('circle', { cx: 37, cy: 175, r: 2.2 }),
+  );
+  svg.append(bassClef, buildStaffLines(totalWidth, noteStart));
 
   const noteheads = svgElement('g', { class: 'noteheads' });
   pitches.forEach((pitch, index) => {
-    noteheads.append(buildNotehead(pitch, index, SVG_HEIGHT));
+    noteheads.append(buildNotehead(pitch, index, totalHeight, geometry));
   });
   svg.append(noteheads);
 
@@ -293,7 +305,11 @@ export function renderStaff(mount, { pitches = allPitches(), onSelect } = {}) {
     scrollNoteheadIntoView(scroller, byMidi.get(selected.midi));
   }
 
-  if (typeof onSelect === 'function') wirePointerEvents(heads, onSelect);
+  if (typeof onSelect === 'function') {
+    for (const head of heads) {
+      head.addEventListener('click', () => onSelect(Number(head.getAttribute('data-midi'))));
+    }
+  }
 
   return { highlight, clear, mount, scroller, svg, pitches };
 }
