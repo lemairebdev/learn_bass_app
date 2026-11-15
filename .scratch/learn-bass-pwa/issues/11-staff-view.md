@@ -35,15 +35,16 @@ The single bass-clef staff strip: one clickable notehead per written pitch (36, 
 
 - `renderStaff(mount, { pitches = allPitches(), onSelect } = {})` → `{ highlight, clear, mount, scroller, svg, pitches }` — mirrors the fretboard handle from ticket 10.
 - `highlight(selection)` accepts a sounding MIDI number or a model pitch object; primary = the single notehead at the exact pitch's written pitch (sounding + 12); secondary = noteheads of the same pitch class in other octaves; `null`/out-of-range clears; auto-scrolls the primary notehead into view (instant).
-- `onSelect(soundingMidi)` fires on click/Enter/Space on a notehead.
-- Notehead `<g class="notehead">` carries `data-midi` and `data-pitch` (both sounding MIDI), `data-note` (sounding name), `data-pitch-class`, `data-written-pitch`, `data-written-name`, `role="button"`, `tabindex="0"`, `aria-label="Note écrite Mi2 (son Mi1)"`; tiers marked `data-highlight="primary|secondary"` plus classes `is-primary`/`is-secondary`, attribute absent at rest.
+- `onSelect(soundingMidi)` fires on pointer click on a notehead. Enter/Space activation was removed in the final review to match the pointer/tap-only scope; the required French aria-label and data attributes remain.
+- Notehead `<g class="notehead">` carries `data-midi` and `data-pitch` (both sounding MIDI), `data-note` (sounding name), `data-pitch-class`, `data-written-pitch`, `data-written-name`, and `aria-label="Note écrite Mi2 (son Mi1)"`; tiers marked `data-highlight="primary|secondary"` plus classes `is-primary`/`is-secondary`, attribute absent at rest.
 - Structure: `#staff .staff-scroll`, `svg.staff-svg`, `.staff-line`, `.ledger.ledger-below|.ledger-above`, `.notehead-head`, `.accidental`, `.notehead-label`.
 
 ### Extreme-ledger validation (implementation-time prototype)
 
-Rasterised at 1:1 and checked pixel-by-pixel: Mi2 has exactly one ledger line (22 px below the bottom staff line); Ré♯5 has five ledger lines above (22 px apart, notehead on the fifth). Staff lines 22 px apart; invisible hit rect = full column, 46×306 px on the mobile viewport (≥44 px). Adjustments: label font 11→12 px, ♯ 15→16 px, ♯ gap 14→15 px, and labels moved to a fixed bottom row aligned under each column to stop collisions.
+Rasterised at 1:1 and checked pixel-by-pixel: Mi2 has exactly one ledger line (22 px below the bottom staff line); Ré♯5 has five ledger lines above (22 px apart, notehead on the fifth). Staff lines 22 px apart; mobile hit rect = full column, 46×306 px (≥44 px). The mobile labels are 12 px, with spacing and placement adjusted to avoid collisions.
 
-### Open deviation for ticket 15 / code review
+### Final review fixes (merged `a2c0ea0`)
 
-- The desktop staff **scrolls horizontally inside its column** instead of fitting the ~740 px desktop column; scaling to fit would shrink labels to ~5 px (unreadable). Page layout (staff/table side by side) is unchanged, but user story 29 (« no scrolling between them on PC ») should be re-examined by ticket 15 or code review.
-- No bass-clef glyph is drawn (avoids missing-glyph tofu on Android fonts); the staff is identified by the « Portée » heading and `aria-label="Portée en clé de fa"`.
+- Desktop uses compact geometry: all 36 heads and labels fit in the 740 px scroller at the 1440×900 viewport; labels are 11 px and staggered across four rows. Mobile keeps 46 px hit columns and scrolls horizontally.
+- A bass clef is drawn locally as an inline SVG path with two dots and an accessible « Clé de fa » label; no external font or asset is required.
+- Ticket 15's ergonomics tests and the final review suite pass with the desktop strip visible without horizontal scrolling.

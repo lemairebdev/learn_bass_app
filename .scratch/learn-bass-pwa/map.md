@@ -9,13 +9,13 @@ Produce a complete, directly implementable specification for a bass-learning PWA
 - Simplicity is the priority across Android and PC.
 - Initial recommendation stays a vanilla HTML/CSS/JS PWA; another stack is only chosen if it makes delivery or use simpler.
 - Primary equivalence is exact pitch: same note, same octave, same frequency.
-- Other octaves of the same pitch class may get a secondary highlight; whether that is useful and how it looks is still to prototype.
+- Other octaves of the same pitch class receive a clearly weaker secondary highlight; the visual treatment was validated during implementation.
 - Staff notation follows the bass convention: written notes sit one octave above the sounding pitch.
 - Sharps are the default accidental spelling.
 - The correspondence table is filtered and clickable, synchronized with the fretboard and staff.
 - Bass sound is synthesized with Web Audio, with no external samples.
 - The app must work fully offline after first load.
-- Status: the specification is complete and marked ready-for-agent (`spec.md`). It absorbs wayfinder tickets 02–07; implementation now proceeds through tickets 08–15 in `issues/` on the `integration/learn-bass-pwa` branch.
+- Status: the specification is complete and marked ready-for-agent (`spec.md`). It absorbs wayfinder tickets 02–07; implementation tickets 08–15 are complete on `integration/learn-bass-pwa`. Final review fixes are merged; physical install acceptance remains manual.
 
 ## Decisions so far
 
@@ -25,13 +25,12 @@ Produce a complete, directly implementable specification for a bass-learning PWA
 - [Define the synthesized sound and its controls](issues/05-define-sound-controls.md): Gesture-gated shared AudioContext, monophonic pluck under ~1 s, last click wins, no stop button; volume + mute persisted in localStorage. Spec Implementation Decision 9.
 - [Design architecture, offline behaviour, and updates](issues/06-design-architecture-offline.md): Pure model module + single selection state fanning out to three views and audio; service-worker precache with versioned cache name and reload-to-update notice. Spec Implementation Decisions 3, 4, 10–12.
 - [Define tests and acceptance criteria](issues/07-define-tests-acceptance.md): One Playwright E2E seam, two viewports, external-behavior-only assertions with Web Audio instrumented from outside the page; plus a manual acceptance checklist. Spec Testing Decisions.
-- [Prototype the chromatic staff and responsive screen](issues/03-prototype-staff-responsive.md): Absorbed into the spec as implementation-time validation (Further Notes); carried by implementation tickets 11 (staff extremes) and 12 (secondary-highlight look).
+- [Prototype the chromatic staff and responsive screen](issues/03-prototype-staff-responsive.md): Absorbed into the spec as implementation-time validation (Further Notes); staff extremes and the secondary-highlight treatment were validated in tickets 11/12, and desktop fit plus the visible bass clef were resolved in the final review fixes.
 
 ## Not yet specified
 
 - Concrete deployment: host, URL, and base path — deliberately left open by the spec; relative URLs keep the app portable to any static HTTPS host.
 - Visual identity and icons — deferred; placeholder icons ship first (spec Implementation Decision 2).
-- Whether secondary octave highlighting is pedagogically useful and how it should look — behavior fixed by spec Implementation Decision 5; the visual treatment is validated during implementation (ticket 12).
 
 ## Out of scope
 
