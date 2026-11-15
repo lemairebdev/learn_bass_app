@@ -18,6 +18,10 @@ import { selection } from './state.js';
 /** Volume par défaut (0–100) tant que l'étudiant n'a rien réglé. */
 const DEFAULT_VOLUME = 80;
 
+/** Clés de persistance des préférences audio (décision 9 : seule préférence persistée de l'app). */
+const STORAGE_VOLUME = 'learn-bass.volume';
+const STORAGE_MUTE = 'learn-bass.mute';
+
 /** L'unique contexte audio de la page — `null` tant qu'aucun geste n'a joué. */
 let context = null;
 
@@ -126,11 +130,68 @@ function play(midi) {
 }
 
 /**
- * Monte le module audio : branche la lecture sur la sélection. Les contrôles
- * de l'en-tête (curseur de volume, sourdine) complèteront ce montage
- * (ticket 13).
+ * Monte les contrôles audio dans le conteneur de l'en-tête (décisions 9 et
+ * 10) : un curseur de volume et une bascule de sourdine, libellés en français
+ * avec leurs attributs aria (décision 11 — surface sémantique livrée, pas des
+ * crochets de test), puis restaure les préférences persistées.
+ */
+function renderControls(mount) {
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '100';
+  slider.step = '1';
+  slider.dataset.audioControl = 'volume';
+  slider.setAttribute('aria-label', 'Volume');
+  slider.value = String(volume);
+
+  const mute = document.createElement('button');
+  mute.type = 'button';
+  mute.dataset.audioControl = 'mute';
+  mute.setAttribute('aria-label', 'Sourdine');
+  mute.setAttribute('aria-pressed', String(muted));
+  mute.textContent = 'Sourdine';
+
+  slider.addEventListener('input', () => {
+    volume = Number(slider.value);
+    localStorage.setItem(STORAGE_VOLUME, String(volume));
+    applyMasterGain();
+  });
+
+  mute.addEventListener('click', () => {
+    muted = !muted;
+    mute.setAttribute('aria-pressed', String(muted));
+    localStorage.setItem(STORAGE_MUTE, String(muted));
+    applyMasterGain();
+  });
+
+  mount.append(slider, mute);
+}
+
+/**
+ * Restaure les préférences persistées (story 25) : volume puis sourdine.
+ * Toute valeur illisible ou hors bornes retombe sur les défauts.
+ */
+function restorePreferences() {
+  const storedVolume = localStorage.getItem(STORAGE_VOLUME);
+  if (storedVolume !== null) {
+    const parsedVolume = Number(storedVolume);
+    if (Number.isFinite(parsedVolume) && parsedVolume >= 0 && parsedVolume <= 100) {
+      volume = parsedVolume;
+    }
+  }
+  muted = localStorage.getItem(STORAGE_MUTE) === 'true';
+}
+
+/**
+ * Monte le module audio : les contrôles de l'en-tête, puis la lecture branchée
+ * sur la sélection (`onPlayRequest`, le point d'accroche du ticket 12). Toute
+ * demande de lecture provient d'un geste utilisateur : le contexte, créé
+ * paresseusement à la première, satisfait la politique d'autodémarrage.
  */
 export function mountAudio(controlsMount) {
   if (!controlsMount) return;
+  restorePreferences();
+  renderControls(controlsMount);
   selection.onPlayRequest(play);
 }

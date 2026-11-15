@@ -159,6 +159,111 @@ test('une nouvelle sélection coupe la tonalité précédente (dernier clic gagn
   }
 });
 
+/**
+ * Le gain maître est identifiable à sa valeur : volume/100. Les AudioParam
+ * sont portés en simple précision flottante — la comparaison tolère donc le
+ * petit écart de conversion (0,8 se lit 0,800000011920929).
+ */
+async function findGainIndexByValue(page, expected) {
+  return page.evaluate(
+    (target) =>
+      window.__audio.gainNodes.findIndex((gain) => Math.abs(gain.gain.value - target) < 0.001),
+    expected,
+  );
+}
+
+test('le curseur de volume règle le gain de sortie et le choix est restauré après rechargement', async ({
+  page,
+}) => {
+  await instrumentAudio(page);
+  await page.goto('/');
+
+  // Contrôles français dans le conteneur de l'en-tête (décisions 2, 9, 10).
+  const slider = page.locator('#audio-controls input[type="range"][data-audio-control="volume"]');
+  await expect(slider).toHaveAttribute('aria-label', 'Volume');
+  await expect(slider).toHaveValue('80');
+
+  // Premier geste : le contexte et son gain maître naissent.
+  await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="5"]').click();
+  const masterIndex = await findGainIndexByValue(page, 0.8);
+  expect(masterIndex, 'le gain maître suit le volume par défaut').toBeGreaterThanOrEqual(0);
+
+  // Régler le volume règle le gain de sortie.
+  await slider.fill('30');
+  expect(await page.evaluate((index) => window.__audio.gainNodes[index].gain.value, masterIndex)).toBeCloseTo(0.3);
+
+  // Le choix est restauré après un rechargement (décision 9, story 25).
+  await page.reload();
+  await expect(slider).toHaveValue('30');
+  await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="5"]').click();
+  const restoredIndex = await findGainIndexByValue(page, 0.3);
+  expect(restoredIndex, 'le gain restauré suit le volume choisi').toBeGreaterThanOrEqual(0);
+});
+
+test('la sourdine coupe la sortie et la sélection garde sa surbrillance', async ({ page }) => {
+  await instrumentAudio(page);
+  await page.goto('/');
+
+  const mute = page.locator('#audio-controls button[data-audio-control="mute"]');
+  await expect(mute).toHaveAttribute('aria-label', 'Sourdine');
+  await expect(mute).toHaveAttribute('aria-pressed', 'false');
+
+  // Premier geste : le gain maître naît au volume par défaut.
+  await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="5"]').click();
+  const masterIndex = await findGainIndexByValue(page, 0.8);
+  expect(masterIndex).toBeGreaterThanOrEqual(0);
+
+  // La sourdine coupe la sortie…
+  await mute.click();
+  await expect(mute).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate((index) => window.__audio.gainNodes[index].gain.value, masterIndex)).toBe(0);
+
+  // …sans jamais toucher la sélection : la surbrillance primaire reste normale
+  // (décision 9 — explorer en silence), sur la case tapée comme ailleurs.
+  await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="20"]').click();
+  await expect(
+    page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="20"]'),
+  ).toHaveAttribute('data-highlight', 'primary');
+
+  // La sourdine se lève : la sortie revient au volume choisi.
+  await mute.click();
+  await expect(mute).toHaveAttribute('aria-pressed', 'false');
+  expect(await page.evaluate((index) => window.__audio.gainNodes[index].gain.value, masterIndex)).toBeCloseTo(0.8);
+});
+
+test('le volume et la sourdine choisis sont restaurés après rechargement, sans toucher la sélection', async ({
+  page,
+}) => {
+  await instrumentAudio(page);
+  await page.goto('/');
+
+  await page.locator('#audio-controls input[data-audio-control="volume"]').fill('40');
+  await page.locator('#audio-controls button[data-audio-control="mute"]').click();
+
+  await page.reload();
+
+  // Les deux réglages reviennent exactement comme laissés (story 25).
+  await expect(page.locator('#audio-controls input[data-audio-control="volume"]')).toHaveValue('40');
+  await expect(page.locator('#audio-controls button[data-audio-control="mute"]')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  // Après rechargement ET sourdine : sélectionner une note met toujours la
+  // surbrillance normale, et la sortie reste muette.
+  await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="5"]').click();
+  await expect(
+    page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="5"]'),
+  ).toHaveAttribute('data-highlight', 'primary');
+  // Volume restauré = 40 % : aucun gain maître ouvert à cette valeur —
+  // la sourdine restaurée tient toujours (les AudioParam sont en simple
+  // précision, d'où la tolérance).
+  const anyOpenMaster = await page.evaluate(() =>
+    window.__audio.gainNodes.some((gain) => Math.abs(gain.gain.value - 0.4) < 0.001),
+  );
+  expect(anyOpenMaster, 'sourdine restaurée : la sortie reste coupée').toBe(false);
+});
+
 test('chaque sélection joue la fréquence exacte de la note (Mi1 → 41,2 Hz, Sol2 → 98,0 Hz)', async ({
   page,
 }) => {
