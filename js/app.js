@@ -9,6 +9,7 @@ import { renderTable } from './table.js';
 import { renderFretboard } from './fretboard.js';
 import { renderStaff } from './staff.js';
 import { selection } from './state.js';
+import { mountAudio } from './audio.js';
 
 /**
  * Toute interaction résout sa note par le modèle (source de vérité) puis met à
@@ -41,3 +42,54 @@ selection.subscribe((midi) => {
     else view.highlight(midi);
   }
 });
+
+// Le module audio se branche sur la même sélection : chaque demande de lecture
+// (`onPlayRequest`, y compris la re-sélection de la même note) joue la note
+// sonore à sa fréquence exacte ; les contrôles de l'en-tête sont montés dans
+// le conteneur prévu (décisions 4, 9 et 10).
+mountAudio(document.getElementById('audio-controls'));
+
+/** Enregistre le service worker et propose le rechargement d'une mise à jour prête. */
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+
+  const notice = document.getElementById('update-notice');
+  const reloadButton = notice?.querySelector('button');
+  if (!notice || !reloadButton) return;
+
+  let acceptedUpdate = false;
+  let registration;
+
+  const showUpdate = () => {
+    if (registration?.active && registration.waiting) notice.hidden = false;
+  };
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'UPDATE_READY') showUpdate();
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (acceptedUpdate) window.location.reload();
+  });
+
+  reloadButton.addEventListener('click', () => {
+    if (!registration?.waiting) return;
+    acceptedUpdate = true;
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  });
+
+  navigator.serviceWorker.register('./sw.js').then((registered) => {
+    registration = registered;
+    if (registration.waiting) showUpdate();
+    registration.addEventListener('updatefound', () => {
+      const installing = registration.installing;
+      installing?.addEventListener('statechange', () => {
+        if (installing.state === 'installed') showUpdate();
+      });
+    });
+  }).catch((error) => {
+    console.error('Impossible d’enregistrer le service worker :', error);
+  });
+}
+
+registerServiceWorker();
