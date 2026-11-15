@@ -9,6 +9,7 @@ import { renderTable } from './table.js';
 import { renderFretboard } from './fretboard.js';
 import { renderStaff } from './staff.js';
 import { selection } from './state.js';
+import { mountAudio } from './audio.js';
 
 /**
  * Toute interaction résout sa note par le modèle (source de vérité) puis met à
@@ -41,3 +42,9 @@ selection.subscribe((midi) => {
     else view.highlight(midi);
   }
 });
+
+// Le module audio se branche sur la même sélection : chaque demande de lecture
+// (`onPlayRequest`, y compris la re-sélection de la même note) joue la note
+// sonore à sa fréquence exacte ; les contrôles de l'en-tête sont montés dans
+// le conteneur prévu (décisions 4, 9 et 10).
+mountAudio(document.getElementById('audio-controls'));
