@@ -1,7 +1,7 @@
 # 13 — Audio module and header controls
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 12
 
 ## Goal

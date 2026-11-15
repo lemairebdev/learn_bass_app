@@ -1,7 +1,7 @@
 # 15 — Mobile ergonomics: tap targets and auto-scroll validation
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 12
 
 ## Goal

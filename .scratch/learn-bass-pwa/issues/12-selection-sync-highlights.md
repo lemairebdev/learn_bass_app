@@ -1,7 +1,7 @@
 # 12 — Selection state, three-way synchronization, highlight tiers
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: 09, 10, 11
 
 ## Goal
@@ -28,3 +28,28 @@ The app's single piece of state — the currently selected sounding pitch — an
 
 - The suite above passes on both viewports together with the existing suite.
 - If another implementer may be running tests concurrently, run yours with `TEST_PORT=4212 npm test`.
+
+## Comments
+
+- **Resolved 2026-11-15.** Implemented on branch `ticket/12-selection-sync-highlights`, merged to `integration/learn-bass-pwa` as `7af1b3b`. Full suite: 70 passed, 0 failed, 4 expected skips (mobile-only cases on desktop); command `npm test`.
+
+### Selection-state API for ticket 13
+
+`js/state.js` exports `createSelection(initial = null)` and the app singleton `selection`.
+
+`createSelection()` returns:
+- `get() → selected sounding MIDI | null`
+- `isSelected(midi) → boolean`
+- `select(midi)` — notifies `subscribe` listeners only when the MIDI changes; emits an `onPlayRequest` on every selection, including reselecting the same pitch.
+- `clear()` — clears the current selection and notifies change listeners (no play request).
+- `subscribe(listener) → unsubscribe`
+- `onPlayRequest(listener) → unsubscribe` — audio ticket 13 should attach here; listener receives the selected sounding MIDI.
+
+The app resolves each interaction through `pitchForMidi()` before calling `selection.select(pitch.midi)`. The audio module should import the singleton `selection` from `./state.js` and attach its player to `selection.onPlayRequest(...)`.
+
+### Table and view highlight contracts
+
+- `renderTable(mount, pitches = allPitches(), { onSelect } = {})` now returns `{ highlight, clear, mount, rows }` and calls `onSelect(soundingMidi)` on row click/Enter/Space. `highlight` accepts a MIDI number or `{midi}`, applies `data-highlight=\"primary|secondary\"` and `.is-primary` / `.is-secondary`, and scrolls the primary row into view. Filtering continues to use `hidden`, separate from highlight classes.
+- Fretboard and staff already share the same `highlight(midi)` / `clear()` interface and `data-highlight=\"primary|secondary\"` convention.
+- Secondary treatment validated in all views: fretboard uses pale blue cells and muted labels, staff uses muted gray noteheads/labels, table uses a very light gray row without the primary's left rule or bold text; primary remains visibly stronger.
+- Desktop/mobile suite covers all interaction directions, Do3's four positions, range ends, open strings, a sharp, unchanged visual state on reselect, reset on reload, and mobile auto-scroll for the staff/fretboard/table.
