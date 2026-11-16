@@ -124,7 +124,6 @@ function buildTable(pitches) {
  * octaves de la même classe de hauteur. `null` (ou une note absente) efface.
  * Le niveau est exposé par `data-highlight` et les classes `is-primary` /
  * `is-secondary` — jamais par l'attribut `hidden`, réservé aux filtres.
- * Amène la ligne primaire dans la zone visible.
  */
 function applyHighlight(rows, selection) {
   const midi = typeof selection === 'number' ? selection : selection?.midi;
@@ -146,8 +145,6 @@ function applyHighlight(rows, selection) {
       row.classList.remove('is-primary', 'is-secondary');
     }
   }
-
-  if (selected) selected.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 /** Applique les deux filtres (ET) : masque les lignes et positions exclues. */
@@ -176,7 +173,6 @@ function applyFilters(root) {
  * - `highlight(soundingMidi)` : niveau primaire sur la ligne de la note exacte,
  *   niveau secondaire sur les lignes des autres octaves de sa classe de
  *   hauteur ; accepte un numéro MIDI ou l'objet note du modèle ; `null` efface ;
- *   amène la ligne primaire dans la zone visible ;
  * - `clear()` : efface toute surbrillance.
  *
  * `options.onSelect(soundingMidi)` est appelé à chaque clic pointeur sur une

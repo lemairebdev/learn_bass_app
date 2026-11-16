@@ -26,6 +26,8 @@ Produce a complete, directly implementable specification for a bass-learning PWA
 - [Design architecture, offline behaviour, and updates](issues/06-design-architecture-offline.md): Pure model module + single selection state fanning out to three views and audio; service-worker precache with versioned cache name and reload-to-update notice. Spec Implementation Decisions 3, 4, 10–12.
 - [Define tests and acceptance criteria](issues/07-define-tests-acceptance.md): One Playwright E2E seam, two viewports, external-behavior-only assertions with Web Audio instrumented from outside the page; plus a manual acceptance checklist. Spec Testing Decisions.
 - [Prototype the chromatic staff and responsive screen](issues/03-prototype-staff-responsive.md): Absorbed into the spec as implementation-time validation (Further Notes); staff extremes and the secondary-highlight treatment were validated in tickets 11/12, and desktop fit plus the visible bass clef were resolved in the final review fixes.
+- [Prevent vertical page scrolling on selection](issues/16-prevent-vertical-page-scroll.md): Selecting a note highlights the table without moving the page; only the fretboard and staff's own horizontal scrollers auto-align off-screen pitches.
+- [Explain the written octave on the staff](issues/17-explain-written-octave.md): A visible French note explains that staff notation is one octave above sounding pitch and gives the Ré4 écrit → Ré3 sonore example.
 
 ## Not yet specified
 

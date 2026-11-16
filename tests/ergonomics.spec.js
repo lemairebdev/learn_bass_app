@@ -324,7 +324,7 @@ test('sur mobile, une case basse sélectionnée ramène le manche à gauche (dé
   expect(low.cellRight, 'Mi·1 dans la zone visible').toBeLessThanOrEqual(low.visibleRight + 1);
 });
 
-test('sur mobile, la sélection révèle la ligne du tableau dans une vue filtrée (décision 8)', async ({
+test('sur mobile, la sélection surligne le tableau filtré sans déplacer la page', async ({
   page,
 }) => {
   test.skip(test.info().project.name !== 'mobile', 'défilement vertical de la page sur écran étroit');
@@ -338,19 +338,15 @@ test('sur mobile, la sélection révèle la ligne du tableau dans une vue filtr�
   await expect(row).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 0));
-  const viewport = page.viewportSize();
   const before = await row.boundingBox();
   expect(before, 'la ligne de Ré♯4 est présente dans la vue filtrée').not.toBeNull();
-  expect(before.y + before.height, 'la ligne est d’abord hors de la fenêtre').toBeGreaterThan(
-    viewport.height,
-  );
+  const initialScrollY = await page.evaluate(() => window.scrollY);
 
-  // Sélection depuis le manche : la ligne du tableau doit venir dans la fenêtre.
+  // Sélection depuis le manche : la ligne reçoit sa surbrillance, sans révéler
+  // le tableau en faisant défiler la page.
   await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="20"]').click();
-  await expect(row).toBeVisible();
-  const after = await row.boundingBox();
-  expect(after.y, 'la ligne sélectionnée est ramenée dans la fenêtre').toBeGreaterThanOrEqual(-1);
-  expect(after.y + after.height).toBeLessThanOrEqual(viewport.height + 1);
+  await expect(row).toHaveAttribute('data-highlight', 'primary');
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(initialScrollY);
 });
 
 test("sur grand écran, les trois vues restent alignées d'un seul coup d'œil (décision 10)", async ({

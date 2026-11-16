@@ -144,6 +144,12 @@ section h2 {
   font-size: 1rem;
 }
 
+.staff-convention {
+  margin: 0 0 0.5rem;
+  color: #56606d;
+  font-size: 0.85rem;
+}
+
 /* Points de montage des vues (tickets 09–12). */
 .view {
   min-width: 0;

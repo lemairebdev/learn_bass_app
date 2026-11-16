@@ -82,6 +82,16 @@ test('identifie et dessine la clé de fa sur la portée', async ({ page }) => {
   await expect(clef.locator('circle')).toHaveCount(2);
 });
 
+test('explique visiblement que la portée est écrite une octave au-dessus du son', async ({ page }) => {
+  await page.goto('/');
+
+  const convention = page.locator('#staff-section .staff-convention');
+  await expect(convention).toBeVisible();
+  await expect(convention).toContainText('une octave au-dessus');
+  await expect(convention).toContainText('Ré4 écrit correspond à Ré3 sonore');
+  await expect(convention).toContainText('Le tableau et le manche affichent Ré3');
+});
+
 test('affiche les 36 têtes et leurs étiquettes dans la portée de bureau sans défilement', async ({
   page,
 }) => {

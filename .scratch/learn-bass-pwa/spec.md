@@ -45,7 +45,7 @@ Tapping/clicking any position in any view selects that exact pitch: every equiva
 25. As a bass student, I want my volume and mute choice remembered between sessions, so that I don't reset it every time.
 26. As a bass student on Android, I want fret cells and staff noteheads big enough to tap with a thumb, so that I never mis-tap on a phone.
 27. As a bass student on Android, I want the fretboard to scroll horizontally with the open-string end always visible, so that I keep my bearings while exploring high frets.
-28. As a bass student on Android, I want the views to auto-scroll to my selection, so that highlights are never off-screen.
+28. As a bass student on Android, I want horizontally scrollable views to bring my selection into view without moving the page vertically, so that I can keep my place while exploring.
 29. As a bass student on PC, I want the whole fretboard, staff, and table laid out together without scrolling between them, so that I can compare representations in one glance.
 30. As a bass student on PC, I want mouse clicks to behave exactly like taps on the phone, so that the app works the same everywhere.
 31. As a bass student on Android, I want to install the app from the browser onto my home screen, so that it opens full-screen like a native app.
@@ -86,7 +86,7 @@ Vocabulary used throughout (from the wayfinder map): a **position** is a (string
   - Audio gating: no AudioContext creation or activity before the first user gesture; context created and running after.
   - Offline: after the first load, block all network requests and reload — the app is still fully interactive.
   - Updates: serve a bumped service-worker version — the reload notice appears, and after reload the new version is active.
-  - Ergonomics: on the mobile viewport, tap targets meet the minimum size, taps land on the intended cell or notehead, and auto-scroll brings the selection into view.
+  - Ergonomics: on the mobile viewport, tap targets meet the minimum size, taps land on the intended cell or notehead, the fretboard and staff scroll horizontally to their selection, and selecting a note does not move the page vertically.
 - **Modules tested:** all of them, through the seam — the musical model via the table and staff projections, the views via interaction, the audio module via external instrumentation, the service worker via the offline and update scenarios.
 - **Manual acceptance checklist (not automatable here):** the bass tone's character by ear; readability of the staff's extreme ledger lines and of the secondary highlight on a physical Android device; the actual install flows on Android (home screen / WebAPK) and on desktop Chrome/Edge.
 

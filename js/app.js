@@ -34,8 +34,9 @@ const staffView = staff ? renderStaff(staff, { onSelect: select }) : null;
 const views = [fretboardView, staffView, tableView].filter(Boolean);
 
 // La sélection se propage : chaque vue applique ses deux niveaux de surbrillance
-// (primaire = note exacte, secondaire = autres octaves de la même classe) et
-// amène la sélection dans sa zone visible.
+// (primaire = note exacte, secondaire = autres octaves de la même classe). Le
+// manche et la portée gardent la note visible dans leurs rubans horizontaux ;
+// le tableau ne déplace pas la page.
 selection.subscribe((midi) => {
   for (const view of views) {
     if (midi === null) view.clear();

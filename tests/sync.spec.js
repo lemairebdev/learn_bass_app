@@ -290,17 +290,20 @@ test("sur mobile, la sélection amène les cases et les têtes dans la zone visi
   expect(staff.headRight).toBeLessThanOrEqual(staff.visibleRight + 1);
 });
 
-test('sur mobile, la sélection révèle la ligne du tableau (décision 4)', async ({ page }) => {
+test('sur mobile, la sélection dans une vue ne déplace pas la page vers le tableau', async ({ page }) => {
   test.skip(test.info().project.name !== 'mobile', 'défilement vertical de la page sur écran étroit');
 
   await page.goto('/');
 
-  // La ligne de Ré♯4 est la dernière du tableau, loin sous la ligne de flottaison.
+  const initialScrollY = await page.evaluate(() => window.scrollY);
+
+  // La ligne de Ré♯4 est sous la ligne de flottaison ; elle est surlignée sans
+  // que la page ne défile pour la révéler.
   await page.locator('#fretboard .fret-cell[data-string="Sol"][data-fret="20"]').click();
 
-  const row = await page.locator('#table tbody tr[data-pitch="63"]').boundingBox();
-  const viewport = page.viewportSize();
-  expect(row, 'la ligne sélectionnée existe').not.toBeNull();
-  expect(row.y, 'la ligne sélectionnée est ramenée dans la fenêtre').toBeGreaterThanOrEqual(-1);
-  expect(row.y + row.height).toBeLessThanOrEqual(viewport.height + 1);
+  await expect(page.locator('#table tbody tr[data-pitch="63"]')).toHaveAttribute(
+    'data-highlight',
+    'primary',
+  );
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(initialScrollY);
 });
